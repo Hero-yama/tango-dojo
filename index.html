@@ -1,0 +1,2479 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#EDF0F5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10141D" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="単語道場">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;-webkit-tap-highlight-color:transparent}</style>
+<title>準1級 単語道場</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one narrow column like a phone app; home = deadline + stamp card, quiz = one card at a time */
+:root{
+  --bg:#EDF0F5; --paper:#FFFFFF; --ink:#1B2440; --muted:#5D6785; --line:#D3D9E6;
+  --stamp:#D4333B; --stamp-soft:#F8DEE0; --ice:#2F6FC9; --ice-soft:#DCE8F8;
+  --ok:#1E8556; --ok-soft:#DAF1E6; --warn:#B8741F;
+  --f-display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10141D; --paper:#1A2030; --ink:#E7EBF5; --muted:#98A1BC; --line:#2C3447;
+  --stamp:#F0575E; --stamp-soft:#3A2128; --ice:#6FA3F0; --ice-soft:#1E2C45;
+  --ok:#45C38B; --ok-soft:#173327; --warn:#E3A754; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10141D; --paper:#1A2030; --ink:#E7EBF5; --muted:#98A1BC; --line:#2C3447;
+  --stamp:#F0575E; --stamp-soft:#3A2128; --ice:#6FA3F0; --ice-soft:#1E2C45;
+  --ok:#45C38B; --ok-soft:#173327; --warn:#E3A754; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:460px;margin:0 auto;padding-block:20px 40px;display:flex;flex-direction:column;gap:16px}
+h1,h2{margin:0;text-wrap:balance}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{font-family:var(--f-display);font-size:20px;letter-spacing:.02em}
+.brand small{display:block;font-family:var(--f-body);font-size:11px;color:var(--muted);letter-spacing:.12em;font-weight:500}
+.rank{font-size:12px;text-align:right;color:var(--muted)}
+.rank b{display:block;color:var(--ink);font-size:14px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px}
+.label{font-size:11px;letter-spacing:.14em;color:var(--muted);font-weight:700}
+/* deadline */
+.deadline{position:relative;overflow:hidden}
+.deadline .msg{font-weight:700;font-size:17px;margin:6px 0 2px}
+.clock{font-family:var(--f-mono);font-weight:600;font-size:44px;letter-spacing:.02em;font-variant-numeric:tabular-nums;line-height:1.1}
+.deadline.urgent{border-color:var(--stamp)}
+.deadline.urgent .clock{color:var(--stamp);animation:pulse 1s steps(2) infinite}
+.deadline.cleared .clock{color:var(--muted);font-size:28px}
+@keyframes pulse{50%{opacity:.55}}
+.streakrow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.chip{display:flex;align-items:baseline;gap:6px;padding:6px 12px;border-radius:999px;background:var(--bg);font-size:13px}
+.chip b{font-family:var(--f-display);font-size:18px;font-weight:400}
+.chip.hot b{color:var(--stamp)} .chip.ice b{color:var(--ice)}
+.risk{margin-top:12px;font-size:13px;color:var(--stamp);font-weight:700}
+/* quota */
+.quota{display:flex;align-items:center;gap:16px}
+.ring{flex:none;width:84px;height:84px}
+.ring circle{fill:none;stroke-width:9}
+.ring .bgc{stroke:var(--line)} .ring .fg{stroke:var(--stamp);stroke-linecap:round;transition:stroke-dashoffset .6s}
+.ring text{fill:var(--ink);font-family:var(--f-display);font-size:20px}
+.quota .txt{min-width:0;flex:1}
+.quota .txt p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.btn{appearance:none;border:0;border-radius:12px;padding:16px;font:700 17px var(--f-body);cursor:pointer;width:100%;
+  background:var(--stamp);color:#fff;letter-spacing:.04em}
+.btn:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);font-size:14px;padding:12px}
+.btn:focus-visible,.opt:focus-visible,input:focus-visible{outline:3px solid var(--ice);outline-offset:2px}
+/* stamp card */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+.cell{aspect-ratio:1;max-width:100%;border:1px dashed var(--line);border-radius:50%;display:grid;place-items:center;
+  font-family:var(--f-mono);font-size:11px;color:var(--muted);position:relative}
+.cell.done{border:2px solid var(--stamp);color:var(--stamp);font-family:var(--f-display);font-size:15px;transform:rotate(-12deg);background:var(--stamp-soft)}
+.cell.frozen{border:2px solid var(--ice);color:var(--ice);font-family:var(--f-display);font-size:15px;background:var(--ice-soft)}
+.cell.today{border:2px solid var(--ink);color:var(--ink);font-weight:600}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:0}
+.legend .l1::before{background:var(--stamp)} .legend .l2::before{background:var(--ice)} .legend .l3::before{border:1px dashed var(--muted)}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats div{min-width:0}
+.stats b{display:block;font-family:var(--f-display);font-size:22px;font-weight:400;font-variant-numeric:tabular-nums}
+.stats span{font-size:11px;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;background:var(--ink);border-radius:99px}
+.exam{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.exam input{font:500 14px var(--f-body);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.exam .days{font-family:var(--f-display);font-size:26px}
+.notice{background:var(--ink);color:var(--bg);border-radius:12px;padding:12px 14px;font-size:14px;font-weight:500}
+/* quiz */
+.qhead{display:flex;align-items:center;gap:12px}
+.qhead .bar{flex:1;margin:0;height:8px}
+.qhead .bar i{background:var(--stamp);transition:width .3s}
+.qhead .cnt{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.x{appearance:none;background:none;border:0;color:var(--muted);font-size:14px;cursor:pointer;padding:4px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:28px 18px;text-align:center;position:relative;min-height:170px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.card .pos{font-size:12px;color:var(--muted);letter-spacing:.1em}
+.card .word{font-family:var(--f-display);font-size:34px;line-height:1.25;overflow-wrap:anywhere}
+.card .word.jp{font-size:26px}
+.card .hint{font-size:13px;color:var(--muted)}
+.card .tag{position:absolute;top:12px;left:14px;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--ice)}
+.card .tag.new{color:var(--warn)}
+.combo{position:absolute;top:10px;right:14px;font-family:var(--f-display);color:var(--stamp);font-size:15px}
+.combo.pop{animation:pop .35s}
+@keyframes pop{40%{transform:scale(1.5)}}
+.opts{display:grid;gap:10px}
+.opt{appearance:none;text-align:left;background:var(--paper);color:var(--ink);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;
+  font:500 16px var(--f-body);cursor:pointer;display:flex;gap:12px;align-items:center}
+.opt .k{font-family:var(--f-mono);font-size:12px;color:var(--muted);flex:none}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--stamp);background:var(--stamp-soft)}
+.opt:disabled{cursor:default}
+.fb{min-height:24px;text-align:center;font-weight:700;font-size:14px}
+.fb.ok{color:var(--ok)} .fb.ng{color:var(--stamp)}
+/* result */
+.result{text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
+.hanko{width:150px;height:150px;border:6px solid var(--stamp);border-radius:50%;display:grid;place-items:center;color:var(--stamp);
+  font-family:var(--f-display);font-size:64px;transform:rotate(-14deg);animation:stamp .5s cubic-bezier(.2,1.6,.4,1) both;background:var(--stamp-soft)}
+@keyframes stamp{0%{transform:scale(2.4) rotate(-14deg);opacity:0}100%{transform:scale(1) rotate(-14deg);opacity:1}}
+.result .big{font-family:var(--f-display);font-size:22px}
+.result .stats{width:100%}
+.confirm{display:flex;gap:8px}
+.confirm .btn{font-size:14px;padding:12px}
+.foot{font-size:12px;color:var(--muted);text-align:center}
+/* coach mascot */
+.coach{display:flex;align-items:flex-end;gap:10px}
+.coach svg{flex:none;width:88px;height:88px;overflow:visible}
+.coach.sm svg{width:62px;height:62px}
+.bubble{position:relative;background:var(--paper);border:1.5px solid var(--ink);border-radius:14px;padding:10px 14px;font-weight:700;font-size:14px;margin-bottom:22px;min-width:0;text-align:left}
+.bubble::before{content:"";position:absolute;left:-7px;bottom:12px;width:11px;height:11px;background:var(--paper);border-left:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink);transform:rotate(45deg)}
+.hop{animation:hop .55s}
+@keyframes hop{30%{transform:translateY(-12px)}60%{transform:translateY(0)}80%{transform:translateY(-3px)}}
+.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.mascot{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mascot .m-all,.mascot .m-eyes,.mascot .m-look,.mascot .m-hl,.mascot .m-hr,.mascot .m-spark,.mascot .m-sweat,.mascot .m-tear,.mascot .m-shadow,.mascot .m-blush,.mascot .m-zip{transform-box:fill-box;transform-origin:center}
+.mascot .m-all{transform-origin:50% 100%}
+.mascot .m-d2{animation-delay:.35s!important}.mascot .m-d3{animation-delay:.7s!important}
+.mascot .m-eyes{animation:m-blink 4.2s infinite}
+@keyframes m-blink{0%,90%,100%{transform:scaleY(1)}93%{transform:scaleY(.1)}96%{transform:scaleY(1)}}
+.mood-normal .m-all{animation:m-breathe 2.6s ease-in-out infinite}
+@keyframes m-breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.035,.965)}}
+.mood-normal .m-look{animation:m-look 7s ease-in-out infinite}
+@keyframes m-look{0%,30%,100%{transform:translateX(0)}36%,50%{transform:translateX(-2px)}56%,72%{transform:translateX(2px)}}
+.mood-normal .m-hl{animation:m-wigL 2.6s ease-in-out infinite}.mood-normal .m-hr{animation:m-wigR 2.6s ease-in-out infinite}
+@keyframes m-wigL{50%{transform:translate(-1px,-1.5px) rotate(-14deg)}}@keyframes m-wigR{50%{transform:translate(1px,-1.5px) rotate(14deg)}}
+.mood-happy .m-all{animation:m-jump .9s cubic-bezier(.3,0,.3,1) infinite}
+@keyframes m-jump{0%,100%{transform:translateY(0) scale(1.07,.93)}15%{transform:translateY(0) scale(.95,1.06)}45%{transform:translateY(-12px) scale(.98,1.03)}75%{transform:translateY(0) scale(1.08,.92)}85%{transform:translateY(0) scale(1,1)}}
+.mood-happy .m-shadow{animation:m-shadow .9s cubic-bezier(.3,0,.3,1) infinite}
+@keyframes m-shadow{45%{transform:scale(.65);opacity:.05}}
+.mood-happy .m-hl{transform-origin:100% 100%;animation:m-waveL .4s ease-in-out infinite alternate}
+.mood-happy .m-hr{transform-origin:0% 100%;animation:m-waveR .4s ease-in-out infinite alternate}
+@keyframes m-waveL{from{transform:rotate(-18deg)}to{transform:rotate(12deg)}}@keyframes m-waveR{from{transform:rotate(18deg)}to{transform:rotate(-12deg)}}
+.mascot .m-spark{animation:m-twinkle 1.1s ease-in-out infinite}
+@keyframes m-twinkle{0%,100%{transform:scale(.5) rotate(0);opacity:.4}50%{transform:scale(1.25) rotate(45deg);opacity:1}}
+.mood-happy .m-blush{animation:m-blush .9s ease-in-out infinite}
+@keyframes m-blush{50%{transform:scale(1.3);opacity:1}}
+.mood-sad .m-all{animation:m-droop 3.2s ease-in-out infinite}
+@keyframes m-droop{0%,100%{transform:rotate(-3deg) scale(1,.98)}50%{transform:rotate(3deg) scale(1.02,.95)}}
+.mascot .m-tear{animation:m-tear 1.5s ease-in infinite}
+@keyframes m-tear{0%{transform:translateY(-2px);opacity:0}30%{opacity:1}100%{transform:translateY(7px);opacity:0}}
+.mood-panic .m-all{animation:m-jitter .16s linear infinite}
+@keyframes m-jitter{0%,100%{transform:translate(-1.5px,0) rotate(-2deg)}50%{transform:translate(1.5px,-1px) rotate(2deg)}}
+.mood-panic .m-hl{animation:m-flail .2s linear infinite alternate}.mood-panic .m-hr{animation:m-flail .2s linear infinite alternate-reverse}
+@keyframes m-flail{from{transform:translateY(-3px) rotate(-25deg)}to{transform:translateY(1px) rotate(20deg)}}
+.mascot .m-sweat{animation:m-sweat 1s ease-in infinite}
+@keyframes m-sweat{0%{transform:translateY(-2px);opacity:0}20%{opacity:1}100%{transform:translateY(12px);opacity:0}}
+.mascot .m-zip{animation:m-zip .3s steps(2) infinite}
+@keyframes m-zip{50%{opacity:.2}}
+.mascot.poke .m-all{animation:m-poke .55s cubic-bezier(.3,1.5,.5,1)!important}
+@keyframes m-poke{0%{transform:scale(1)}25%{transform:scale(1.18,.78)}55%{transform:translateY(-8px) scale(.9,1.12)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* ===== v2 追加分 ===== */
+.app.hasTab{padding-bottom:100px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--paper);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar .in{display:flex;width:100%;max-width:460px}
+.tabbar button{flex:1;appearance:none;background:none;border:0;padding:10px 0 12px;font:700 12px var(--f-body);color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;letter-spacing:.06em}
+.tabbar button svg{width:22px;height:22px}
+.tabbar button.on{color:var(--stamp)}
+.tabbar button:focus-visible{outline:3px solid var(--ice);outline-offset:-3px}
+.btn.alt{background:var(--ink);color:var(--bg)}
+.btn.sub{background:var(--ice-soft);color:var(--ice);border:1px solid var(--ice)}
+.btn small{font-weight:500;opacity:.85;margin-left:6px}
+mark{background:var(--stamp-soft);color:var(--stamp);border-radius:4px;padding:0 3px;font-weight:700}
+/* 発音ボタン */
+.spk{appearance:none;border:1.5px solid var(--line);background:var(--paper);color:var(--ice);border-radius:50%;width:38px;height:38px;display:inline-grid;place-items:center;cursor:pointer;flex:none}
+.spk:hover{border-color:var(--ice)}
+.spk.big{width:84px;height:84px;margin:6px auto;background:var(--ice-soft);border-color:var(--ice)}
+.spk.big svg{width:40px;height:40px}
+/* 答え合わせ */
+.rv{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--ice);border-radius:12px;padding:12px 14px;text-align:left}
+.rv-h{display:flex;align-items:center;gap:10px}
+.rv-h b{font-family:var(--f-display);font-weight:400;font-size:22px;overflow-wrap:anywhere}
+.rv-h .ps{font-size:11px;color:var(--muted);letter-spacing:.08em;flex:1}
+.rv-jp{font-weight:700;margin:2px 0 6px}
+.rv-ex{font-size:14px;color:var(--muted);line-height:1.6;font-family:Georgia,"Times New Roman",serif;font-style:italic}
+/* 新出語の導入カード */
+.intro{gap:10px;padding:26px 18px}
+.intro .jpbig{font-size:22px;font-weight:700}
+.intro .rv-ex{text-align:left;background:var(--bg);border-radius:10px;padding:10px 12px;margin-top:6px}
+/* スペル問題 */
+.spellbox{display:flex;gap:8px}
+.spellbox input{flex:1;min-width:0;font:600 20px var(--f-mono);padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);letter-spacing:.04em}
+.spellbox .btn{width:auto;padding:0 20px;font-size:15px}
+.pattern{font-family:var(--f-mono);font-size:18px;letter-spacing:.2em;color:var(--muted)}
+.dk{margin-top:-2px}
+/* 単語帳 */
+.search{width:100%;font:500 15px var(--f-body);padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{appearance:none;border:1px solid var(--line);background:var(--paper);color:var(--muted);font:700 12px var(--f-body);padding:6px 12px;border-radius:999px;cursor:pointer}
+.chips button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.wi{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;margin-bottom:8px}
+.wi-h{display:flex;align-items:center;gap:10px}
+.wi-h b{font-weight:700;font-size:16px}
+.wi-h .jp{color:var(--muted);font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wi .dot{width:10px;height:10px;border-radius:50%;flex:none;border:1.5px dashed var(--muted)}
+.wi.learn .dot{background:var(--ice);border:0}.wi.mas .dot{background:var(--ok);border:0}.wi.weak .dot{background:var(--stamp);border:0}
+.wi .rv{margin-top:10px;background:var(--bg)}
+.star{appearance:none;background:none;border:0;font-size:20px;color:var(--line);cursor:pointer;padding:0 2px;line-height:1}
+.star.on{color:#E8A41C}
+.empty{text-align:center;color:var(--muted);padding:30px 0}
+/* 週間グラフ */
+.wk{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;height:96px;margin-top:10px}
+.wkc{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;position:relative;font-size:11px;color:var(--muted)}
+.wkc i{display:block;width:100%;max-width:28px;background:var(--ice);border-radius:5px 5px 0 0;min-height:3px;opacity:.85}
+.wkc.t i{background:var(--stamp)}
+.wkc span{font-family:var(--f-mono);margin-bottom:2px;font-size:11px}
+.wkc em{font-style:normal;margin-top:3px}
+/* 設定 */
+.setlist .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-weight:700}
+.setlist .row:last-child{border-bottom:0}
+.setlist small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.setlist select,.setlist input[type=date]{font:500 14px var(--f-body);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.sw{appearance:none;width:46px;height:28px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;flex:none;transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw:checked{background:var(--ok)}.sw:checked::after{transform:translateX(18px)}
+.sw:focus-visible{outline:3px solid var(--ice);outline-offset:2px}
+.panel p{margin:6px 0 12px;font-size:13px;color:var(--muted)}
+.misslist{width:100%;text-align:left;font-size:13px;color:var(--muted)}
+.misslist b{color:var(--ink)}
+.fm{display:grid;gap:8px;margin-top:12px}
+.fm input,.fm select,.fm textarea{font:500 15px var(--f-body);padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:100%}
+.fm textarea{font-family:var(--f-mono);font-size:13px;resize:vertical}
+.bdg{font-size:10px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 5px;flex:none}
+.wctl{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--muted)}
+.wctl select{font:500 13px var(--f-body);padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.wctl .btn{width:auto;padding:7px 14px;font-size:13px;margin-left:auto}
+/* ===== もっち v3 ===== */
+.mascot .m-z,.mascot .m-q,.mascot .m-yawn{transform-box:fill-box;transform-origin:center}
+.mood-think .m-all{animation:m-tilt 3.2s ease-in-out infinite}
+@keyframes m-tilt{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.mascot .m-q{animation:m-q 1.6s ease-in-out infinite}
+@keyframes m-q{0%,100%{transform:translateY(0) rotate(-8deg);opacity:.6}50%{transform:translateY(-4px) rotate(8deg);opacity:1}}
+.mood-sleepy .m-all{animation:m-sleep 4s ease-in-out infinite}
+@keyframes m-sleep{0%,100%{transform:scale(1,1) rotate(-2deg)}50%{transform:scale(1.05,.95) rotate(2deg)}}
+.mascot .m-z{animation:m-zz 2.4s ease-out infinite}
+@keyframes m-zz{0%{transform:translate(0,4px) scale(.6);opacity:0}30%{opacity:1}100%{transform:translate(4px,-8px) scale(1.1);opacity:0}}
+.mascot .m-yawn{animation:m-yawn 4s ease-in-out infinite}
+@keyframes m-yawn{0%,55%,100%{transform:scale(.7)}70%,85%{transform:scale(1.5,1.9)}}
+.mood-wow .m-all{animation:m-jump .7s cubic-bezier(.3,0,.3,1) infinite}
+.mood-wow .m-shadow{animation:m-shadow .7s cubic-bezier(.3,0,.3,1) infinite}
+.mood-wow .m-hl{transform-origin:100% 100%;animation:m-waveL .3s ease-in-out infinite alternate}
+.mood-wow .m-hr{transform-origin:0% 100%;animation:m-waveR .3s ease-in-out infinite alternate}
+.mood-wow .m-blush{animation:m-blush .7s ease-in-out infinite}
+.mascot.fid .m-all{animation:m-fid 1.1s ease-in-out!important}
+@keyframes m-fid{0%,100%{transform:rotate(0)}20%{transform:rotate(-7deg) translateY(-3px)}45%{transform:rotate(7deg) translateY(-5px)}70%{transform:rotate(-3deg)}}
+.bubble{cursor:pointer;transform-origin:0 100%;animation:bpop .28s cubic-bezier(.3,1.6,.5,1)}
+@keyframes bpop{from{transform:scale(.85);opacity:0}}
+.opt.out{opacity:.35;text-decoration:line-through}
+.cf{position:fixed;width:8px;height:12px;z-index:50;pointer-events:none;animation:cf 1.2s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes cf{to{transform:translate(var(--x),calc(var(--y) + 130px)) rotate(var(--r));opacity:0}}
+
+</style>
+
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+const WORDS=[
+["acquire","動","獲得する"],
+["abolish","動","廃止する"],
+["allocate","動","割り当てる"],
+["accumulate","動","蓄積する"],
+["anticipate","動","予期する・見越す"],
+["advocate","動","提唱する・擁護する"],
+["accommodate","動","収容する・(要望に)応じる"],
+["allege","動","(証拠なしに)主張する"],
+["acknowledge","動","(事実だと)認める"],
+["alleviate","動","(苦痛を)和らげる"],
+["collaborate","動","協力する・共同で行う"],
+["ambiguous","形","曖昧な"],
+["comprise","動","〜から成る・構成する"],
+["anonymous","形","匿名の"],
+["confront","動","直面する・立ち向かう"],
+["arbitrary","形","恣意的な・気まぐれな"],
+["contemplate","動","じっくり考える"],
+["assert","動","断言する"],
+["convey","動","伝える・運ぶ"],
+["bolster","動","強化する・支える"],
+["cultivate","動","耕す・育成する"],
+["coherent","形","首尾一貫した"],
+["detect","動","検出する・見つける"],
+["compile","動","(資料を)まとめる・編集する"],
+["disclose","動","公表する・暴露する"],
+["comply","動","(規則に)従う"],
+["discard","動","捨てる"],
+["concede","動","(しぶしぶ)認める"],
+["disrupt","動","混乱させる・中断させる"],
+["condemn","動","強く非難する"],
+["distort","動","ゆがめる"],
+["consensus","名","(全体の)合意"],
+["eliminate","動","除去する"],
+["conspicuous","形","目立つ"],
+["embrace","動","(考えを)受け入れる・抱きしめる"],
+["contaminate","動","汚染する"],
+["emerge","動","現れる・出てくる"],
+["curb","動","抑制する"],
+["enhance","動","(質を)高める"],
+["deplete","動","枯渇させる"],
+["enforce","動","(法を)施行する"],
+["deteriorate","動","悪化する"],
+["evacuate","動","避難させる"],
+["deter","動","思いとどまらせる"],
+["evaluate","動","評価する"],
+["discrepancy","名","食い違い・矛盾"],
+["evolve","動","進化する・発展する"],
+["disperse","動","散らす・分散させる"],
+["exaggerate","動","誇張する"],
+["elicit","動","(反応・情報を)引き出す"],
+["exploit","動","搾取する・(資源を)活用する"],
+["endorse","動","(公に)支持する・承認する"],
+["facilitate","動","促進する・容易にする"],
+["exacerbate","動","(さらに)悪化させる"],
+["fulfill","動","(義務を)果たす・満たす"],
+["feasible","形","実現可能な"],
+["impose","動","(税・規則を)課す"],
+["fluctuate","動","変動する"],
+["initiate","動","始める・着手する"],
+["hamper","動","妨げる"],
+["integrate","動","統合する"],
+["inadvertent","形","うっかりした・不注意による"],
+["interpret","動","解釈する・通訳する"],
+["incentive","名","動機づけ・奨励策"],
+["intervene","動","介入する"],
+["indigenous","形","先住の・土着の"],
+["jeopardize","動","危険にさらす"],
+["inevitable","形","避けられない"],
+["justify","動","正当化する"],
+["infringe","動","(権利を)侵害する"],
+["manipulate","動","(巧みに)操作する"],
+["lucrative","形","もうかる"],
+["migrate","動","移住する・(鳥が)渡る"],
+["meticulous","形","細心の・几帳面な"],
+["modify","動","修正する・変更する"],
+["negligible","形","取るに足らない"],
+["neglect","動","怠る・ほったらかす"],
+["obsolete","形","廃れた・時代遅れの"],
+["outweigh","動","〜より重要である・上回る"],
+["plausible","形","もっともらしい"],
+["persevere","動","根気強く続ける"],
+["precarious","形","不安定な・危うい"],
+["persist","動","固執する・持続する"],
+["prevalent","形","広く行き渡った"],
+["postpone","動","延期する"],
+["prolong","動","長引かせる"],
+["precede","動","〜に先行する"],
+["reconcile","動","和解させる・調和させる"],
+["prohibit","動","禁止する"],
+["refute","動","論駁する・誤りを証明する"],
+["provoke","動","引き起こす・挑発する"],
+["reluctant","形","気が進まない"],
+["pursue","動","追求する"],
+["rigorous","形","厳密な・厳格な"],
+["reassure","動","安心させる"],
+["scrutinize","動","綿密に調べる"],
+["refrain","動","控える・慎む"],
+["skeptical","形","懐疑的な"],
+["renovate","動","改装する"],
+["substantial","形","相当な・かなりの"],
+["resent","動","憤慨する・恨む"],
+["superficial","形","表面的な"],
+["restore","動","回復させる・修復する"],
+["undermine","動","(徐々に)弱体化させる"],
+["revise","動","改訂する・見直す"],
+["vulnerable","形","傷つきやすい・脆弱な"],
+["speculate","動","推測する・投機する"],
+["thrive","動","繁栄する・よく育つ"],
+["stimulate","動","刺激する・活性化する"],
+["vigilant","形","油断のない・警戒している"],
+["surpass","動","しのぐ・勝る"],
+["tentative","形","仮の・暫定的な"],
+["suspend","動","一時停止する・停学にする"],
+["ubiquitous","形","至る所にある"],
+["sustain","動","持続させる・支える"],
+["pragmatic","形","実用本位の・現実的な"],
+["tackle","動","(問題に)取り組む"],
+["dubious","形","疑わしい・怪しい"],
+["trigger","動","引き金となる・誘発する"],
+["erode","動","侵食する・むしばむ"],
+["utilize","動","利用する"],
+["hostile","形","敵意のある"],
+["withdraw","動","撤退する・(預金を)引き出す"],
+["intact","形","無傷の・損なわれていない"],
+["verify","動","検証する・確かめる"],
+["plummet","動","急落する"],
+["conceal","動","隠す"],
+["proficient","形","熟達した"],
+["depict","動","描写する"],
+["resilient","形","回復力のある・立ち直りの早い"],
+["endure","動","耐える"],
+["retain","動","保持する・保つ"],
+["ensure","動","確実にする"],
+["abundant","形","豊富な"],
+["entail","動","(必然的に)伴う"],
+["breach","名","違反・(契約の)不履行"],
+["perceive","動","知覚する・気づく"],
+["compensate","動","補償する・埋め合わせる"],
+["retrieve","動","取り戻す・回収する"],
+["deprive","動","奪う"],
+["soar","動","急上昇する"],
+["imminent","形","差し迫った"],
+["adversity","名","逆境"],
+["irrelevant","形","無関係な・的外れの"],
+["alliance","名","同盟"],
+["anomaly","名","異常・例外"],
+["aspiration","名","熱望・大志"],
+["burden","名","負担・重荷"],
+["catastrophe","名","大惨事"],
+["compliance","名","(法令の)遵守"],
+["controversy","名","論争"],
+["criterion","名","(判断の)基準"],
+["deficiency","名","欠乏・不足"],
+["dilemma","名","板挟み・ジレンマ"],
+["drawback","名","欠点・難点"],
+["epidemic","名","流行病・蔓延"],
+["fatigue","名","疲労"],
+["hypothesis","名","仮説"],
+["implication","名","(暗に含む)影響・含意"],
+["legislation","名","法律・立法"],
+["livelihood","名","生計・暮らし"],
+["outbreak","名","(戦争・病気の)発生"],
+["prospect","名","見通し・見込み"],
+["remedy","名","治療法・救済策"],
+["setback","名","挫折・つまずき"],
+["surplus","名","余剰・黒字"],
+["threshold","名","入り口・限界値"],
+["turmoil","名","混乱・騒動"],
+["welfare","名","福祉"],
+["bias","名","偏見・偏り"],
+["fraud","名","詐欺"],
+["obligation","名","義務"],
+["verdict","名","評決・判断"],
+["infrastructure","名","社会基盤"],
+["acute","形","深刻な・鋭い"],
+["adverse","形","不利な・有害な"],
+["compatible","形","両立できる・互換性のある"],
+["comprehensive","形","包括的な"],
+["crucial","形","極めて重要な"],
+["diligent","形","勤勉な"],
+["drastic","形","思い切った・抜本的な"],
+["eligible","形","資格のある"],
+["explicit","形","明確な・露骨な"],
+["fragile","形","壊れやすい"],
+["genuine","形","本物の・心からの"],
+["hazardous","形","危険な・有害な"],
+["inherent","形","本来備わった・固有の"],
+["legitimate","形","正当な・合法的な"],
+["mandatory","形","義務的な・強制の"],
+["notorious","形","悪名高い"],
+["profound","形","深い・重大な"],
+["prominent","形","著名な・目立つ"],
+["reckless","形","無謀な"],
+["sophisticated","形","洗練された・高度な"],
+["versatile","形","多才な・用途の広い"],
+["deliberately","副","故意に・慎重に"],
+["predominantly","副","主に・大部分は"],
+["virtually","副","事実上・ほとんど"],
+["impartial","形","公平な・偏らない"],
+["deduce","動","推論する"]
+];
+const WMAP={};WORDS.forEach(w=>WMAP[w[0]]={en:w[0],pos:w[1],jp:w[2]});
+const INTERVAL=[1,2,4,7,15,30];
+const RANKS=[[0,"見習い"],[300,"門下生"],[800,"初段"],[1600,"二段"],[3000,"三段"],[5000,"師範代"],[8000,"準1級の鬼"]];
+const KEY="tango-dojo-v1";
+const _lastPick=new WeakMap();const pick=a=>{let i;do{i=Math.floor(Math.random()*a.length)}while(a.length>1&&i===_lastPick.get(a));_lastPick.set(a,i);return a[i]};
+const L=s=>s.trim().split("\n").map(x=>x.trim()).filter(Boolean);
+const LINES={
+idle:L(`
+きょうの…たんご……まだ……?
+もっち……ずっと……まってた……
+やらないと……もっち……しおしお……
+ちょっとだけ……いっしょに……!
+10こ……だけ……だよ……?
+たんご……さみしがってる……
+ねえ……ねえ……
+きょうも……がんばる……?
+もっち……じゅんび……できてる……
+えいけん……ちかづいてる……
+いま……やると……あとが……らく……
+5ふん……だけ……おねがい……
+もっちと……やくそく……した……
+はんこ……おしたい……
+きのうの……たんご……おぼえてる……?
+まいにち……こつこつ……
+いっこずつ……で……いい……
+もっち……おうえん……する……!
+はじめたら……すぐ……おわる……
+こっち……みて……
+ふぁいと……!
+たんご……たべたい……(たべない)
+もっち……ここで……まってる……
+きょうは……どんな……たんご……かな……
+すきまじかん……チャンス……
+あとで……じゃなくて……いま……
+もっち……どきどき……
+ちょっと……のぞいて……みる……?
+がんばった……ぶんだけ……つよくなる……
+じゅんいっきゅう……とろ……!
+もっち……ひまだった……
+たんごちょう……ひらこ……
+やるき……でなくても……だいじょぶ……
+はじめの……1もん……だけ……
+もっち……となりに……いる……
+きょうの……ぶん……とっとく……?
+うで……まくり……
+まいにちの……つみかさね……
+いっしょに……いこ……
+さあ……さあ……
+`),
+mid:L(`
+あと……ちょっと……!
+いま……やめたら……もったいない……
+とちゅう……だよ……
+もどって……きて……くれた……?
+つづき……やろ……
+のこり……すこし……
+ここまで……えらい……
+あと……ひといき……
+はんこ……みえてきた……
+もっち……まってた……つづき……
+さっきの……いきおいで……
+ちょっと……やすんだら……つづき……
+もうすこし……で……ゴール……
+のこりも……いっしょに……
+とちゅうで……ねたら……だめ……
+いいところ……だった……
+はじめたから……さいごまで……
+もっち……ゴールで……まってる……
+あと……すこしだけ……
+さいごの……ひとふんばり……
+`),
+late:L(`
+しめきり……ちかい……
+きょう……まだ……だよね……?
+よる……になっちゃう……
+もっち……そわそわ……
+とけい……みて……
+きょうが……おわっちゃう……
+いまなら……まだ……まにあう……
+ねるまえに……10こ……
+おふろの……まえに……やろ……
+ごはんの……あとに……ね……?
+もっち……ちょっと……しんぱい……
+れんぞく……きえちゃう……かも……
+きょうの……はんこ……まだ……しろい……
+はやめが……いい……よ……
+あしたに……まわさないで……
+もっち……ずっと……みてる……
+いま……スマホ……みてるなら……
+ちょっとだけ……ね……?
+しめきりまで……カウントダウン……
+もっち……なきそう……
+`),
+panic:L(`
+じかん……ない……っ!!
+いそいで……!もっち……ないちゃう……!
+あと……ちょっとしか……ない……!!
+れんぞく……きえる……!!
+もっち……あわあわ……
+いま!!いま……やろ……!!
+はんこ……まにあって……!
+ねたら……だめ……!!
+まって……まって……!
+きょうが……おわる……!!
+10こ……すぐ……おわる……から……!
+もっち……もう……むり……
+おねがい……!!
+はやく……はやく……!
+とけい……すすんでる……!
+さいごの……チャンス……!!
+もっち……ぷるぷる……
+まにあう……まだ……まにあう……!
+いそいで……でも……おちついて……!
+た……たすけて……!
+`),
+done:L(`
+できた……!えらい……!
+はんこ……ぺったん……!
+あしたも……まってる……
+きょうの……もっち……まんぞく……
+すごい……ほんとに……すごい……
+ごうかくに……いっぽ……ちかづいた……
+もっち……うれしい……
+きょうも……がんばった……ね……
+おつかれさま……!
+ゆっくり……やすんで……
+つよく……なった……!
+はなまる……!
+いっしょに……やれて……たのしかった……
+もっち……おどっちゃう……
+かんぺき……!
+れんぞく……のびた……!
+きょうの……あなた……かっこいい……
+たんごと……ちょっと……なかよく……なった……
+あしたの……ぶんも……たのしみ……
+ほめて……あげる……!
+もっち……ほこらしい……
+ここまで……こつこつ……すごい……
+えいけん……こわくない……
+おいしい……もの……たべてね……
+きょうは……もう……やすも……
+このちょうしで……いこ……
+もっち……ずっと……みてた……よ……
+やりきった……ね……!
+あしたも……あえる……?
+ばんざい……!
+`),
+broken:L(`
+……また……きょうから……
+だいじょぶ……いっしょに……つもう……
+もっち……おこって……ない……よ……
+もどって……きて……くれた……
+ゼロから……でも……へいき……
+また……はじめれば……いい……
+もっち……ずっと……まってた……
+きょうが……あたらしい……いちにちめ……
+きにしない……きにしない……
+つぎは……れんぞく……のばそ……
+いきてれば……だいじょぶ……
+きょう……やれば……かち……
+もっち……ちょっと……さみしかった……
+おかえり……
+いっぽ……ずつ……
+また……はんこ……あつめよ……
+ゆっくりで……いい……
+もっち……しんじてる……
+きょうから……また……よろしく……
+いっしょに……やりなおそ……
+`),
+ask:L(`
+わかる……?
+おちついて……
+もっち……も……かんがえてる……
+これ……むずかしい……?
+ゆっくりで……いい……
+どれかな……
+みたこと……ある……?
+かんで……いい……よ……
+もっち……どきどき……
+じっくり……みて……
+うーん……
+たぶん……わかる……
+きのう……やった……かも……
+まよったら……ちょっかん……
+もっち……しってる……けど……いわない……
+ひっかけ……ちゅうい……
+いみ……おもいだして……
+こたえは……ひとつ……
+たんごの……かお……みて……
+ヒント……ほしい……?(あげない)
+きみなら……いける……
+もっち……おうえん……ちゅう……
+あたま……つかお……
+あせらない……
+こころの……めで……
+どきどき……
+これ……すき……
+でる……やつ……だよ……
+しずかに……まつ……
+えらんで……
+`),
+ok:L(`
+やった……!
+せいかい……!
+すごい……!
+おぼえてた……!
+ぴんぽん……!
+さすが……!
+てんさい……?
+もっち……うれしい……
+そのとおり……!
+いいかんじ……!
+ばっちり……!
+はなまる……!
+やるね……!
+かんぺき……!
+にっこり……
+すてき……!
+わーい……!
+もっち……はくしゅ……
+あたり……!
+きもちいい……!
+しってた……の……?
+おみごと……!
+つよい……
+そのちょうし……!
+えらい……えらい……
+きらきら……
+もっち……おどる……
+ナイス……!
+いいね……!
+ぴろん……♪
+あたまいい……
+すっと……でたね……
+もう……ともだち……だね……このたんご……
+しっかり……おぼえてる……
+もっち……かんどう……
+いけてる……!
+すばらしい……!
+ぐっど……!
+どやっ……
+ひゅー……!
+`),
+combo:L(`
+とまらない……!!
+れんぞく……!かっこいい……!
+つよい……!
+コンボ……!コンボ……!
+もっち……こうふん……!
+むてき……!
+このまま……いこ……!
+えいけん……マスター……?
+すごすぎ……!
+てが……ふるえる……(もっちの)
+れんぞく……きろく……!
+ぜっこうちょう……!
+ノリノリ……!
+だれにも……とめられない……
+もっち……ついていけない……
+ひゅーひゅー……!
+もう……まけない……
+いきおい……すごい……
+きょうの……あなた……さいきょう……
+ぴかぴか……!
+ずっと……せいかい……
+これは……ほんもの……
+もっち……メモ……しとく……
+はやい……!
+たのしく……なってきた……
+もっと……みせて……!
+れんしょう……!
+ちょうし……いいね……!!
+あたまが……さえてる……
+レジェンド……!
+`),
+ng:L(`
+だいじょぶ……つぎ……おぼえてる……
+どんまい……!また……でる……
+いま……おぼえたから……へいき……
+まちがえて……おぼえる……
+もっち……も……よく……まちがえる……
+きにしない……
+いっかい……みたら……ともだち……
+つぎは……とれる……
+あぶなかった……ね……
+にてる……から……むずかしい……
+ここで……おぼえれば……かち……
+もっち……なぐさめる……
+くやしいの……だいじ……
+あとで……リベンジ……
+だいじょぶ……だいじょぶ……
+ゆっくり……で……いい……
+こたえ……みて……おこ……
+まちがいは……たからもの……
+つぎは……いける……
+ちょっと……おしい……
+`),
+poke:L(`
+むにっ……
+くすぐったい……
+もっち……やわらかい……
+つつかないで……
+なあに……?
+えへへ……
+もっち……げんき……
+もう……いっかい……?
+びっくり……した……
+ぷにぷに……
+もっち……ここ……
+あそんで……くれるの……?
+たんご……やろ……?
+もっちの……ほっぺ……
+ぽよん……
+いたく……ない……よ……
+もっち……てれる……
+すき……?
+にこにこ……
+はい……もっちです……
+うふふ……
+そこ……おなか……
+ころがっちゃう……
+ねてた……のに……
+もっち……おきた……
+ぎゅっ……
+もちもち……
+かまって……くれた……
+おーい……
+もっち……しあわせ……
+`)
+};
+let RM=false;try{RM=matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){}
+let _wob=0;
+function owl(mood){
+  const n=++_wob,k="#4A3A33",face="#FFF6EA",blush="#F4A9A8";
+  let eyes,mouth,extra="";
+  const sparks=`<path class="m-spark" d="M16 26l2 5l5 2l-5 2l-2 5l-2-5l-5-2l5-2z" fill="#F6C95B"/><path class="m-spark m-d2" d="M84 20l1.5 3.5l3.5 1.5l-3.5 1.5l-1.5 3.5l-1.5-3.5l-3.5-1.5l3.5-1.5z" fill="#F6C95B"/><path class="m-spark m-d3" d="M88 40l1 2.4l2.4 1l-2.4 1l-1 2.4l-1-2.4l-2.4-1l2.4-1z" fill="#F6C95B"/>`;
+  if(mood==="happy"){
+    eyes=`<path d="M38 57q3-3.5 6 0M56 57q3-3.5 6 0" fill="none" stroke="${k}" stroke-width="2.4" stroke-linecap="round"/>`;
+    mouth=`<path d="M47.5 63.5q2.5 4 5 0" fill="#E77A7A" stroke="${k}" stroke-width="1.6" stroke-linejoin="round"/>`;
+    extra=sparks;
+  }else if(mood==="wow"){
+    eyes=`<g class="m-eyes"><circle cx="41" cy="57" r="4.2" fill="${k}"/><circle cx="59" cy="57" r="4.2" fill="${k}"/><circle cx="42.6" cy="55.4" r="1.6" fill="#fff"/><circle cx="60.6" cy="55.4" r="1.6" fill="#fff"/></g>`;
+    mouth=`<ellipse cx="50" cy="65.5" rx="2.6" ry="3.2" fill="#E77A7A" stroke="${k}" stroke-width="1.6"/>`;
+    extra=sparks;
+  }else if(mood==="think"){
+    eyes=`<g class="m-eyes"><circle cx="42.5" cy="56" r="2.8" fill="${k}"/><circle cx="60.5" cy="56" r="2.8" fill="${k}"/></g><path d="M36 51.5l7-2M57 49.5l7 2" fill="none" stroke="${k}" stroke-width="1.6" stroke-linecap="round"/>`;
+    mouth=`<path d="M47 64.5q3-1.5 6 .5" fill="none" stroke="${k}" stroke-width="1.6" stroke-linecap="round"/>`;
+    extra=`<text class="m-q" x="76" y="32" font-size="17" font-weight="700" fill="${k}" font-family="sans-serif">?</text>`;
+  }else if(mood==="sleepy"){
+    eyes=`<path d="M37 58q4 3 8 0M55 58q4 3 8 0" fill="none" stroke="${k}" stroke-width="2.4" stroke-linecap="round"/>`;
+    mouth=`<ellipse class="m-yawn" cx="50" cy="65.5" rx="2.2" ry="2.4" fill="#E77A7A" stroke="${k}" stroke-width="1.4"/>`;
+    extra=`<text class="m-z" x="70" y="40" font-size="13" font-weight="700" fill="#7A8CB8" font-family="sans-serif">z</text><text class="m-z m-d2" x="78" y="30" font-size="10" font-weight="700" fill="#7A8CB8" font-family="sans-serif">z</text><text class="m-z m-d3" x="85" y="21" font-size="8" font-weight="700" fill="#7A8CB8" font-family="sans-serif">z</text>`;
+  }else if(mood==="sad"){
+    eyes=`<g class="m-eyes"><circle cx="41" cy="58" r="3.4" fill="${k}"/><circle cx="59" cy="58" r="3.4" fill="${k}"/><circle cx="42.2" cy="56.8" r="1.3" fill="#fff"/><circle cx="60.2" cy="56.8" r="1.3" fill="#fff"/></g>
+    <path class="m-tear" d="M38.5 62.5q0 4 1.5 5" fill="none" stroke="#7FB7E8" stroke-width="2" stroke-linecap="round"/><path class="m-tear m-d2" d="M61.5 62.5q0 4-1.5 5" fill="none" stroke="#7FB7E8" stroke-width="2" stroke-linecap="round"/>`;
+    mouth=`<path d="M47.5 65q2.5-2 5 0" fill="none" stroke="${k}" stroke-width="1.6" stroke-linecap="round"/>`;
+  }else if(mood==="panic"){
+    eyes=`<g class="m-eyes"><path d="M41 55v6M59 55v6" stroke="${k}" stroke-width="2.6" stroke-linecap="round"/></g>`;
+    mouth=`<path d="M46 65q1-1.5 2 0t2 0t2 0t2 0" fill="none" stroke="${k}" stroke-width="1.6" stroke-linecap="round"/>`;
+    extra=`<path class="m-sweat" d="M80 36q4 6 0 8.5q-4-2.5 0-8.5z" fill="#9CCBF0"/><path class="m-sweat m-d2" d="M19 42q3 4.5 0 6.5q-3-2 0-6.5z" fill="#9CCBF0"/><path class="m-sweat m-d3" d="M74 28q3 4.5 0 6.5q-3-2 0-6.5z" fill="#9CCBF0"/><path class="m-zip" d="M86 52l5-2M85 58l5 1" stroke="${k}" stroke-width="1.6" stroke-linecap="round"/>`;
+  }else{
+    eyes=`<g class="m-eyes"><g class="m-look"><circle cx="41" cy="58" r="2.6" fill="${k}"/><circle cx="59" cy="58" r="2.6" fill="${k}"/></g></g>`;
+    mouth=`<path d="M48 63.5q2 1.6 4 0" fill="none" stroke="${k}" stroke-width="1.6" stroke-linecap="round"/>`;
+  }
+  /* 段位で見た目が変わる:初段〜 はちまき / 師範代〜 金のはちまき / 準1級の鬼 つの付き */
+  let ri=0;if(typeof S!=="undefined"&&S)RANKS.forEach((r,i)=>{if(S.xp>=r[0])ri=i});
+  let acc="";
+  if(ri>=6)acc+=`<path d="M33 44l-3-10 9 5zM67 44l3-10-9 5z" fill="#E8604C" stroke="${k}" stroke-width="1.6" stroke-linejoin="round"/>`;
+  if(ri>=2){const bc=ri>=5?"#E8B923":"#D4333B";acc+=`<path d="M25 53Q50 43 75 53" fill="none" stroke="${bc}" stroke-width="5" stroke-linecap="round"/><path d="M74 52l9-3M74 53l8 5" fill="none" stroke="${bc}" stroke-width="3" stroke-linecap="round"/>`}
+  const up=mood==="happy"||mood==="wow";
+  const hands=up
+    ?`<g class="m-hl"><path d="M25 60q-6-5-5-10" fill="none" stroke="${k}" stroke-width="2.2" stroke-linecap="round"/><circle cx="20" cy="49" r="3.2" fill="${face}" stroke="${k}" stroke-width="2"/></g><g class="m-hr"><path d="M75 60q6-5 5-10" fill="none" stroke="${k}" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="49" r="3.2" fill="${face}" stroke="${k}" stroke-width="2"/></g>`
+    :`<ellipse class="m-hl" cx="37" cy="76" rx="4" ry="3.2" fill="${face}" stroke="${k}" stroke-width="2"/><ellipse class="m-hr" cx="63" cy="76" rx="4" ry="3.2" fill="${face}" stroke="${k}" stroke-width="2"/>`;
+  const boil=RM?"":`<animate attributeName="seed" values="1;3;5;2" dur="${mood==="panic"?".3":".8"}s" calcMode="discrete" repeatCount="indefinite"/>`;
+  return `<svg class="mascot mood-${mood}" viewBox="0 0 100 100" role="img" aria-label="応援キャラのもっち(タップできます)">
+  <defs><filter id="wob${n}" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="${n%7}">${boil}</feTurbulence><feDisplacementMap in="SourceGraphic" scale="1.4"/></filter></defs>
+  <ellipse class="m-shadow" cx="50" cy="95" rx="20" ry="2.5" fill="${k}" opacity=".12"/>
+  <g class="m-all"><g filter="url(#wob${n})">
+  <ellipse cx="50" cy="64" rx="27" ry="23" fill="${face}" stroke="${k}" stroke-width="2.2"/>
+  ${acc}
+  <ellipse class="m-blush" cx="34.5" cy="65" rx="4.2" ry="2.4" fill="${blush}" opacity=".75"/><ellipse class="m-blush" cx="65.5" cy="65" rx="4.2" ry="2.4" fill="${blush}" opacity=".75"/>
+  ${eyes}
+  <ellipse cx="50" cy="61" rx="1.7" ry="1.2" fill="${k}"/>
+  ${mouth}
+  ${hands}
+  <ellipse cx="43" cy="88" rx="4.5" ry="2.6" fill="${face}" stroke="${k}" stroke-width="2"/><ellipse cx="57" cy="88" rx="4.5" ry="2.6" fill="${face}" stroke="${k}" stroke-width="2"/>
+  </g></g>
+  ${extra}
+  </svg>`;
+}
+function typeBubbles(){
+  document.querySelectorAll(".bubble:not([data-typed])").forEach(b=>{
+    b.dataset.typed="1";const t=b.textContent;b._full=t;b.setAttribute("aria-label",t);if(RM)return;
+    const tok={};b._tok=tok;b._typing=true;b.textContent="";let i=0;
+    const step=()=>{if(!b.isConnected||b._tok!==tok)return;b.textContent=t.slice(0,++i);
+      if(i<t.length){const c=t[i-1];setTimeout(step,c==="…"?22:/[!?。、]/.test(c)?110:46)}else b._typing=false};
+    step();
+  });
+}
+function finishType(b){b._tok={};b._typing=false;b.textContent=b._full}
+
+/* ===== キャラ(もっち)のせりふ追加分 ===== */
+Object.assign(LINES,{
+hello:L(`
+はじめまして……もっち……です……
+きょうから……いっしょに……がんばろ……
+たんごどうじょうへ……ようこそ……
+まずは……いっこだけ……やってみよ……
+よろしく……ね……!
+`),
+morning:L(`
+おはよう……きょうも……いちにち……
+あさの……あたまは……よくおぼえる……
+あさに……やると……きもちいい……
+おはよう……もっち……ねむい……
+あさいちばん……はんこ……とっちゃお……
+ごはん……たべた……?
+`),
+day:L(`
+すきまじかんに……ちょっとだけ……
+ひるやすみに……10もん……どう……?
+こんにちは……もっち……ひなたぼっこ……
+ねむくなる……まえに……ひとつ……
+いまのうちに……ひとつ……すませよ……
+ひとやすみに……たんご……なんて……
+`),
+eve:L(`
+おつかれさま……きょうも……がんばった……ね……
+ゆうがた……ちょうどいい……じかん……
+ごはんの……まえに……ちょっとだけ……
+きょうの……しめきり……すこし……ちかい……
+おかえり……ゆっくり……やろ……
+`),
+midnight:L(`
+こんな……じかんに……?だいじょぶ……
+もっち……ねむい……ふぁ……
+ちょっとだけ……やったら……ねよ……ね……
+ねないと……あしたの……たんご……わすれる……
+ゆめの……なかでも……たんご……
+`),
+exam:L(`
+しけんまで……あと{d}にち……
+あと{d}にち……だよ……いっしょに……いこ……
+{d}にち……あれば……まだ……のびる……
+カウントダウン……あと{d}にち……
+あと{d}にち……もっち……おうえん……する……
+`),
+examday:L(`
+きょうが……しけんび……!
+いままでの……こと……しんじて……!
+だいじょうぶ……いっておいで……!
+もっち……いのってる……!
+`),
+milestone:L(`
+{n}にち……れんぞく……!?すごい……!!
+{n}にち……もっち……なみだ……
+{n}にちめ……あなた……ほんとに……つよい……
+れんぞく……{n}にち……でんせつ……!
+{n}にち……つづけられる……ひとは……すくない……よ……!
+`),
+rankup:L(`
+「{r}」に……しょうだん……!!おめでとう……!
+あたらしい……だんい……「{r}」……かっこいい……!
+「{r}」……!もっち……はながたかい……!
+つよく……なった……ね……「{r}」……!
+`),
+perfect:L(`
+ぜんぶ……いっぱつ……せいかい……!?
+ミスなし……!かんぺき……すぎる……!
+きょうの……あなた……むてき……
+パーフェクト……!もっち……ふるえてる……
+ひとつも……まちがえない……なんて……!
+`),
+lowacc:L(`
+きょうは……むずかしかった……ね……
+まちがえた……ぶん……おぼえた……ってこと……
+あしたは……もっと……とれる……
+くりかえせば……ぜったい……おぼえる……
+にがてが……わかった……だけで……ゆうしゅう……
+`),
+teach:L(`
+はじめまして……の……たんご……だよ……
+おとを……きいて……みて……
+れいぶんも……いっしょに……よんで……
+こえに……だして……みて……
+なかよく……なれそう……?
+ゆっくり……みて……あとで……ためす……よ……
+`),
+dunno:L(`
+わからないって……いえるの……えらい……
+しらない……は……はじまり……
+ここで……おぼえれば……もう……ともだち……
+しょうじき……だね……すき……
+もっち……も……さいしょは……しらなかった……
+`),
+near:L(`
+おしい……!もじ……ひとつ……だけ……
+あとちょっと……!ほんとに……ちかい……
+つづり……よく……みて……ね……
+にてる……けど……ちがう……よ……
+`),
+spellok:L(`
+かけた……!すごい……!
+スペル……かんぺき……!
+よめるだけじゃ……なく……かける……!
+ゆびが……おぼえてる……!
+つづり……ばっちり……!
+`),
+spellask:L(`
+つづり……おもいだして……
+さいしょの……もじは……みえてる……よ……
+ゆびが……おぼえてる……はず……
+ゆっくり……いっこずつ……
+かけるかな……どきどき……
+`),
+listen:L(`
+みみを……すませて……
+もっち……も……きいてる……
+もういっかい……ききたい……?(スピーカー……おして……)
+なんて……いってた……?
+おとで……おぼえてる……?
+`),
+hint:L(`
+ひとつ……けしといた……
+ちょっと……ヒント……あげる……
+まよってる……?ひとつ……はずれ……はずした……
+もっち……こっそり……おしえる……
+`),
+hint2:L(`
+つぎの……もじも……みせてあげる……
+ヒント……にばんめの……もじ……
+ちょっと……だけ……ね……
+`),
+lastq:L(`
+さいごの……いっこ……!
+ラスト……!ここまで……きた……!
+これで……おわり……!ふんばって……!
+`),
+half:L(`
+はんぶん……きた……!
+ちょうど……なかば……いい……ペース……
+ここから……ここから……
+`),
+weakask:L(`
+にがて……こくふく……しよ……
+ここ……きたえれば……つよくなる……
+にがての……たんご……もっち……そばに……いる……
+`),
+combo5:L(`
+{n}れんしょう……!!すごい……!
+いいかんじ……{n}こ……つづいてる……!
+{n}れんぞく……!ほのお……みえる……
+`),
+combo10:L(`
+{n}れんしょう……!!でんせつ……だ……
+とまらない……!{n}こ……ぜんぶ……せいかい……!
+{n}れんぞく……!?もっち……ひっくり……かえる……
+`),
+okword:L(`
+「{en}」……ばっちり……!
+「{en}」……もう……ともだち……だね……
+「{en}」……おぼえてた……えらい……
+`),
+ngword:L(`
+「{en}」は……「{jp}」……だよ……
+「{en}」=「{jp}」……もっち……も……おぼえた……
+「{en}」……つぎは……とれる……よ……
+`),
+slump:L(`
+ちょっと……ひといき……いれよ……
+しんこきゅう……すって……
+むずかしい……ときも……ある……よ……
+だいじょぶ……もっち……ここに……いる……
+てを……とめて……いいよ……
+`),
+poke2:L(`
+ちょ……ちょっと……!くすぐったい……!
+わわ……!つつきすぎ……!
+あは……あはは……!やめて……!
+もっち……ころがる……!ころころ……
+そんなに……すき……?えへへ……
+`),
+poke3:L(`
+もう……むり……ねる……
+め……まわる……くらくら……
+つつかれすぎて……ねむく……なった……
+ぷしゅー……
+`),
+rare:L(`
+もっちの……すきな……たべもの……たんごもち……(たんごじゃ……ない)
+ないしょの……はなし……もっち……ほんとは……ふくろう……
+たんごを……ひとつ……おぼえると……もっち……ちょっと……ふとる……(うそ)
+ここだけの……はなし……もっち……えいごの……ゆめ……みた……
+`)
+});
+const MILE=[3,7,14,21,30,50,100,200,365];
+const fmt=(s,v={})=>s.replace(/\{(\w+)\}/g,(_,k)=>k in v?esc(v[k]):"");
+let wrongRun=0,pokes=[],finWow=false,hintT=null;
+/* 表情を一時的に差し替える */
+function setMood(el,mood,ms){
+  const old=el.querySelector(".mascot");if(!old)return;
+  if(!el._base)el._base=(old.getAttribute("class").match(/mood-(\w+)/)||[])[1]||"normal";
+  const t=document.createElement("div");t.innerHTML=owl(mood);old.replaceWith(t.firstElementChild);
+  clearTimeout(el._mt);
+  el._mt=setTimeout(()=>{const o=el.isConnected&&el.querySelector(".mascot");if(!o)return;
+    const t2=document.createElement("div");t2.innerHTML=owl(el._base);o.replaceWith(t2.firstElementChild);el._base=null},ms);
+}
+function setBubble(text){const b=document.querySelector("#coach .bubble");if(b){b.textContent=text;b.removeAttribute("data-typed");typeBubbles()}}
+function pokeMascot(m){
+  const co=m.closest(".coach"),now=Date.now();pokes=pokes.filter(t=>now-t<8000);pokes.push(now);
+  const c=pokes.length;let pool="poke";
+  if(c>=12){pool="poke3";setMood(co,"sleepy",2800)}else if(c>=6){pool="poke2";setMood(co,"happy",2200)}
+  const el=co.querySelector(".mascot");
+  el.classList.remove("poke");void el.getBoundingClientRect();el.classList.add("poke");
+  clearTimeout(el._pt);el._pt=setTimeout(()=>el.classList.remove("poke"),560);
+  const b=co.querySelector(".bubble");if(b){b.textContent=pick(LINES[pool]);b.removeAttribute("data-typed");typeBubbles()}
+}
+function burst(el){
+  if(RM||!el)return;const r=el.getBoundingClientRect(),cs=["#D4333B","#2F6FC9","#E8B923","#1E8556"];
+  for(let i=0;i<24;i++){const p=document.createElement("i");p.className="cf";const a=Math.random()*Math.PI*2,d=60+Math.random()*100;
+    p.style.cssText=`left:${r.left+r.width/2}px;top:${r.top+r.height/2}px;background:${cs[i%4]};--x:${Math.cos(a)*d}px;--y:${Math.sin(a)*d-40}px;--r:${Math.random()*540}deg`;
+    document.body.appendChild(p);setTimeout(()=>p.remove(),1300)}
+}
+function homeMood(d,doneN,hrsLeft){
+  const h=new Date().getHours(),ex=S.exam?diffDays(T,S.exam):null;
+  if(d.done){
+    if(MILE.includes(S.streak)&&S.lastDone===T)return{mood:"wow",line:fmt(pick(LINES.milestone),{n:S.streak}),cls:"hop"};
+    return{mood:"happy",line:pick(LINES.done),cls:"hop"}}
+  if(S.notice&&S.notice.includes("途切れ"))return{mood:"sad",line:pick(LINES.broken),cls:""};
+  if(ex===0)return{mood:"wow",line:pick(LINES.examday),cls:"hop"};
+  if(hrsLeft<=2)return{mood:"panic",line:pick(LINES.panic),cls:"panic"};
+  if(hrsLeft<=6)return{mood:"sad",line:pick(LINES.late),cls:"idle"};
+  if(h<5)return{mood:"sleepy",line:pick(LINES.midnight),cls:"idle"};
+  if(doneN>0)return{mood:"normal",line:pick(LINES.mid),cls:"idle"};
+  if(!Object.keys(S.cards).length&&!S.xp)return{mood:"happy",line:pick(LINES.hello),cls:"hop"};
+  if(ex!==null&&ex>0&&ex<=30&&Math.random()<(ex<=7?.6:.3))return{mood:"normal",line:fmt(pick(LINES.exam),{d:ex}),cls:"idle"};
+  if(Math.random()<.04)return{mood:"happy",line:pick(LINES.rare),cls:"idle"};
+  if(Math.random()<.5){const k=h<10?"morning":h<17?"day":"eve";return{mood:h<10?"happy":"normal",line:pick(LINES[k]),cls:"idle"}}
+  return{mood:"normal",line:pick(LINES.idle),cls:"idle"};
+}
+function askLine(type){
+  const d=sess,total=d.queue.length,done=total-d.remaining.length;
+  if(d.remaining.length===1&&total>=3)return pick(LINES.lastq);
+  if(total>=6&&done===Math.floor(total/2))return pick(LINES.half);
+  if(kindNow==="weak"&&Math.random()<.5)return pick(LINES.weakask);
+  if(type==="listen")return pick(LINES.listen);
+  if(type==="spell")return pick(LINES.spellask);
+  return pick(LINES.ask);
+}
+function react(ok,o,w){
+  if(ok){wrongRun=0;
+    if([5,10,15,20,30].includes(combo))return{mood:"wow",text:fmt(pick(LINES[combo>=10?"combo10":"combo5"]),{n:combo})};
+    if(cur.type==="spell"&&Math.random()<.6)return{mood:"happy",text:pick(LINES.spellok)};
+    if(combo>=3)return{mood:"happy",text:pick(LINES.combo)};
+    if(Math.random()<.2)return{mood:"happy",text:fmt(pick(LINES.okword),{en:w.en})};
+    return{mood:"happy",text:pick(LINES.ok)}}
+  wrongRun++;
+  if(wrongRun>=3){wrongRun=0;return{mood:"sad",text:pick(LINES.slump)}}
+  if(o.dunno)return{mood:"normal",text:pick(LINES.dunno)};
+  if(o.near)return{mood:"think",text:pick(LINES.near)};
+  if(Math.random()<.4)return{mood:"sad",text:fmt(pick(LINES.ngword),{en:w.en,jp:w.jp})};
+  return{mood:"sad",text:pick(LINES.ng)};
+}
+function finCoach(acc,n,up,bonus,first){
+  let m="happy",l;finWow=true;
+  if(up){m="wow";l=fmt(pick(LINES.rankup),{r:rankOf(S.xp).name})}
+  else if(first&&MILE.includes(S.streak)){m="wow";l=fmt(pick(LINES.milestone),{n:S.streak})}
+  else if(n>=5&&acc===1){m="wow";l=pick(LINES.perfect)}
+  else if(n>=5&&acc<.5){m="sad";l=pick(LINES.lowacc);finWow=false}
+  else{l=pick(LINES.done);finWow=false}
+  return `<div class="coach hop">${owl(m)}<div class="bubble">${l}</div></div>`;
+}
+/* 15秒迷うと、もっちがヒントをくれる(選択肢を1つ消す/スペルの2文字目を見せる) */
+function startHint(type){
+  clearTimeout(hintT);
+  hintT=setTimeout(()=>{
+    if(locked||view!=="quiz"||!cur)return;
+    const co=document.getElementById("coach");
+    if(type==="spell"){const p=document.querySelector(".pattern"),en=WMAP[cur.id].en;
+      if(p&&en.length>3){p.textContent=(en.slice(0,2)+" "+"_ ".repeat(en.length-2)).trim();setBubble(pick(LINES.hint2));if(co)setMood(co,"think",2500)}return}
+    const live=[...document.querySelectorAll(".opt:not(:disabled)")],wr=live.filter(b=>b.dataset.id!==cur.id);
+    if(live.length<3||!wr.length)return;
+    const t=pick(wr);t.classList.add("out");t.disabled=true;setBubble(pick(LINES.hint));if(co)setMood(co,"think",2500);
+  },15000);
+}
+/* ホームのもっちが、ときどきそわそわ動く */
+setInterval(()=>{if(RM||view!=="home")return;const m=document.querySelector(".coach .mascot.mood-normal");
+  if(!m||m.classList.contains("poke")||Math.random()>.5)return;m.classList.add("fid");setTimeout(()=>m.classList.remove("fid"),1200)},6500);
+/* ===== 例文・品詞 ===== */
+const POS={"動":"動詞","形":"形容詞","名":"名詞","副":"副詞","他":"その他"};
+const PRI=["","低","中","高"];
+const MAXW=1000;
+let BASE=WORDS.slice();BASE.forEach(w=>{w[3]=3});
+/* 組み込み語 + ユーザー追加語(S.custom)から WORDS / WMAP を作り直す */
+function rebuild(){
+  WORDS.length=0;BASE.forEach(w=>WORDS.push(w));
+  for(const k in WMAP)delete WMAP[k];
+  (S.custom||[]).forEach(c=>{WORDS.push([c.en,c.pos,c.jp,c.pri||2]);if(c.ex)EX[c.en]=c.ex;else delete EX[c.en]});
+  WORDS.forEach((w,i)=>{WMAP[w[0]]={en:w[0],pos:w[1],jp:w[2],pri:w[3]||2,custom:i>=BASE.length}});
+}
+const POSMAP={"動":"動","形":"形","名":"名","副":"副","他":"他",v:"動",verb:"動",adj:"形",n:"名",noun:"名",adv:"副"};
+function addWords(list){
+  const res={ok:0,dup:0,bad:0,full:0};S.custom=S.custom||[];
+  for(const x of list){
+    const en=String(x.en||"").trim().toLowerCase(),jp=String(x.jp||"").trim();
+    if(WORDS.length+res.ok>=MAXW){res.full++;continue}
+    if(!/^[a-z][a-z -]{0,39}$/.test(en)||!jp){res.bad++;continue}
+    if(WMAP[en]||S.custom.some(c=>c.en===en)){res.dup++;continue}
+    S.custom.push({en,pos:POS[x.pos]?x.pos:"他",jp:jp.slice(0,80),ex:String(x.ex||"").trim().slice(0,200),pri:[1,2,3].includes(x.pri)?x.pri:2});
+    res.ok++;
+  }
+  rebuild();save();return res;
+}
+function delWord(id){
+  S.custom=(S.custom||[]).filter(c=>c.en!==id);delete S.cards[id];delete S.fav[id];delete EX[id];
+  for(const k in S.days){const d=S.days[k];if(d&&d.queue)["queue","remaining","isNew"].forEach(f=>{if(d[f])d[f]=d[f].filter(x=>x!==id)})}
+  rebuild();save();
+}
+function setPri(id,p){const c=(S.custom||[]).find(c=>c.en===id);if(c){c.pri=p;rebuild();save()}}
+function parseBulk(txt,pri){
+  return txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    const p=l.split(/\t|,|，/).map(s=>s.trim());let pos="他",i=1;const k=POSMAP[(p[1]||"").toLowerCase()];
+    if(k&&p.length>=3){pos=k;i=2}
+    return{en:p[0],pos,jp:p[i]||"",ex:p.slice(i+1).join(", "),pri}});
+}
+const resMsg=r=>`${r.ok}語を追加しました。`+(r.dup?`重複${r.dup}語は除きました。`:"")+(r.bad?`形式エラー${r.bad}件(英単語と意味が必要です。英字・スペース・ハイフンのみ)。`:"")+(r.full?`上限${MAXW}語のため${r.full}語は追加できませんでした。`:"");
+const priSel=(id,v=2)=>`<select id="${id}">${[3,2,1].map(p=>`<option value="${p}" ${p===v?"selected":""}>優先度 ${PRI[p]}</option>`).join("")}</select>`;
+const ctl=id=>`<div class="wctl" data-nopass>優先度<select data-pri="${id}">${[3,2,1].map(p=>`<option value="${p}" ${WMAP[id].pri===p?"selected":""}>${PRI[p]}</option>`).join("")}</select><button class="btn ghost" data-del="${id}">削除</button></div>`;
+let addMode=null,addMsg="";
+function addBox(){
+  const el=document.getElementById("addbox");if(!el)return;
+  const n=WORDS.length;
+  el.innerHTML=`<section class="panel">
+    <div class="label">語彙の追加 / 登録 ${n} / ${MAXW}語(追加語 ${n-BASE.length})</div>
+    <div class="bar"><i style="width:${n/MAXW*100}%"></i></div>
+    <p>優先度「高」の語から順に新出語として出題されます。追加した語は明日の稽古から入ります。</p>
+    <div id="addmsg">${addMsg?`<div class="notice">${esc(addMsg)}</div>`:""}</div>
+    <div class="confirm"><button class="btn ghost" data-add="one">1語ずつ追加</button><button class="btn ghost" data-add="bulk">まとめて追加</button></div>
+    ${addMode==="one"?`<div class="fm"><input id="a_en" placeholder="英単語(例: mitigate)" autocapitalize="off" autocorrect="off" spellcheck="false"><select id="a_pos"><option value="動">動詞</option><option value="形">形容詞</option><option value="名">名詞</option><option value="副">副詞</option><option value="他">その他</option></select><input id="a_jp" placeholder="意味(例: 緩和する)"><input id="a_ex" placeholder="例文(任意)">${priSel("a_pri")}<button class="btn" id="a_ok">追加する</button></div>`:""}
+    ${addMode==="bulk"?`<div class="fm"><textarea id="b_txt" rows="7" placeholder="1行に1語。カンマかタブ区切り&#10;英単語, 品詞(動/形/名/副。省略可), 意味, 例文(省略可)&#10;&#10;mitigate, 動, 緩和する, We must mitigate the risk.&#10;tangible, 形, 具体的な&#10;gist, 要点" spellcheck="false"></textarea>${priSel("b_pri")}<button class="btn" id="b_ok">まとめて追加する</button></div>`:""}
+  </section>`;
+}
+function showAddMsg(m,keep){addMsg=m;if(keep){document.getElementById("addmsg").innerHTML=`<div class="notice">${esc(m)}</div>`}else{addBox();bookList()}}
+const EX={
+acquire:"She acquired a new language skill while living abroad.",
+abolish:"The country abolished the death penalty in 1990.",
+allocate:"The city allocated more money to public transport.",
+accumulate:"Dust had accumulated on the old shelves.",
+anticipate:"We anticipate heavy traffic during the holiday.",
+advocate:"He advocates a shorter working week.",
+accommodate:"The hotel can accommodate up to 300 guests.",
+allege:"The report alleges that the company hid the data.",
+acknowledge:"She acknowledged her mistake in front of everyone.",
+alleviate:"This medicine will alleviate the pain.",
+collaborate:"Two universities collaborated on the research.",
+ambiguous:"His answer was ambiguous, so nobody knew his real opinion.",
+comprise:"The committee comprises ten members.",
+anonymous:"The donor wished to remain anonymous.",
+confront:"She decided to confront her fear of public speaking.",
+arbitrary:"The rule seems arbitrary and unfair.",
+contemplate:"He contemplated quitting his job.",
+assert:"She asserted that she was innocent.",
+convey:"Words cannot convey how grateful I am.",
+bolster:"The new policy will bolster the economy.",
+cultivate:"Farmers cultivate rice in this region.",
+coherent:"He gave a clear and coherent explanation.",
+detect:"The sensor can detect even small movements.",
+compile:"She compiled a list of useful websites.",
+disclose:"The firm refused to disclose its profits.",
+comply:"All drivers must comply with traffic laws.",
+discard:"Please discard any expired food.",
+concede:"He conceded defeat after the final vote.",
+disrupt:"Heavy snow disrupted train services.",
+condemn:"Leaders condemned the attack.",
+distort:"The media may distort the facts.",
+consensus:"There is no consensus on how to solve the problem.",
+eliminate:"We must eliminate waste from the process.",
+conspicuous:"A red sign was conspicuous against the white wall.",
+embrace:"The company embraced new technology.",
+contaminate:"Chemicals contaminated the river.",
+emerge:"A new leader emerged from the crisis.",
+curb:"The government tried to curb inflation.",
+enhance:"Good lighting can enhance the atmosphere of a room.",
+deplete:"Overfishing has depleted the fish stocks.",
+enforce:"The police enforce the law.",
+deteriorate:"His health began to deteriorate last winter.",
+evacuate:"Residents were evacuated before the storm.",
+deter:"High prices deter many people from traveling.",
+evaluate:"Teachers evaluate students' progress every term.",
+discrepancy:"There is a discrepancy between the two reports.",
+evolve:"Technology evolves at a rapid pace.",
+disperse:"The crowd dispersed after the concert.",
+exaggerate:"Don't exaggerate; it wasn't that bad.",
+elicit:"The question elicited a strong response.",
+exploit:"Some companies exploit cheap labor.",
+endorse:"The mayor endorsed the new plan.",
+facilitate:"Software can facilitate communication between teams.",
+exacerbate:"The delay only exacerbated the problem.",
+fulfill:"He fulfilled his promise to his mother.",
+feasible:"The plan is feasible if we get more funding.",
+impose:"The government imposed a new tax on sugar.",
+fluctuate:"Prices fluctuate depending on the season.",
+initiate:"The school initiated a recycling program.",
+hamper:"Bad weather hampered the rescue efforts.",
+integrate:"The app integrates with many other tools.",
+inadvertent:"The error was inadvertent, not deliberate.",
+interpret:"Scientists interpret the data in different ways.",
+incentive:"Tax cuts give companies an incentive to hire.",
+intervene:"The teacher intervened to stop the argument.",
+indigenous:"Kangaroos are indigenous to Australia.",
+jeopardize:"One mistake could jeopardize the entire project.",
+inevitable:"Change is inevitable in any organization.",
+justify:"Nothing can justify such violence.",
+infringe:"The product infringes on our patent.",
+manipulate:"He manipulated the figures to look better.",
+lucrative:"She got a lucrative job offer from a bank.",
+migrate:"Many birds migrate south in winter.",
+meticulous:"He is meticulous about keeping records.",
+modify:"We had to modify the design slightly.",
+negligible:"The cost difference is negligible.",
+neglect:"Don't neglect your health when you are busy.",
+obsolete:"Floppy disks are now obsolete.",
+outweigh:"The benefits outweigh the risks.",
+plausible:"That sounds like a plausible explanation.",
+persevere:"She persevered despite many failures.",
+precarious:"He lives in a precarious financial situation.",
+persist:"If the symptoms persist, see a doctor.",
+prevalent:"Smartphones are prevalent among teenagers.",
+postpone:"The match was postponed because of rain.",
+prolong:"Don't prolong the meeting any longer.",
+precede:"A short speech preceded the dinner.",
+reconcile:"It is hard to reconcile work and family life.",
+prohibit:"Smoking is prohibited in this building.",
+refute:"The scientist refuted the claim with new evidence.",
+provoke:"His remark provoked an angry reaction.",
+reluctant:"She was reluctant to speak in public.",
+pursue:"He moved to Tokyo to pursue his dream.",
+rigorous:"The test was rigorous and covered everything.",
+reassure:"The doctor reassured the worried patient.",
+scrutinize:"Auditors scrutinize every record.",
+refrain:"Please refrain from using your phone here.",
+skeptical:"I'm skeptical about his promises.",
+renovate:"They renovated the old house last year.",
+substantial:"She made a substantial donation to the school.",
+resent:"He resented being treated like a child.",
+superficial:"Their knowledge of the topic was superficial.",
+restore:"Workers restored the old temple.",
+undermine:"Constant criticism can undermine confidence.",
+revise:"I need to revise my essay before submitting it.",
+vulnerable:"Small animals are vulnerable to predators.",
+speculate:"Experts speculate about the cause of the fire.",
+thrive:"Plants thrive in warm, sunny places.",
+stimulate:"Exercise can stimulate the brain.",
+vigilant:"Drivers must remain vigilant at night.",
+surpass:"Sales surpassed all expectations.",
+tentative:"We reached a tentative agreement.",
+suspend:"The company suspended production for a week.",
+ubiquitous:"Smartphones are now ubiquitous.",
+sustain:"The land cannot sustain such a large population.",
+pragmatic:"She took a pragmatic approach to the problem.",
+tackle:"We need to tackle climate change.",
+dubious:"I am dubious about the results of that survey.",
+trigger:"Dust can trigger an allergic reaction.",
+erode:"Waves slowly eroded the cliff.",
+utilize:"We utilize solar energy to power the building.",
+hostile:"The crowd was hostile to the speaker.",
+withdraw:"He withdrew some cash from the ATM.",
+intact:"The vase survived the fall intact.",
+verify:"Please verify your identity before logging in.",
+plummet:"Share prices plummeted after the news.",
+conceal:"She tried to conceal her disappointment.",
+proficient:"He is proficient in three languages.",
+depict:"The painting depicts a quiet village.",
+resilient:"Children are often more resilient than adults.",
+endure:"They endured a long, cold winter.",
+retain:"The company wants to retain its best staff.",
+ensure:"Please ensure that all doors are locked.",
+abundant:"The region has abundant natural resources.",
+entail:"The job entails a lot of travel.",
+breach:"Sharing the file was a breach of contract.",
+perceive:"Many people perceive him as a leader.",
+compensate:"The airline compensated passengers for the delay.",
+retrieve:"The dog retrieved the ball from the water.",
+deprive:"Lack of sleep can deprive you of concentration.",
+soar:"Housing prices have soared in recent years.",
+imminent:"Heavy rain makes a flood imminent.",
+adversity:"She overcame adversity to become a doctor.",
+irrelevant:"That comment is irrelevant to the topic.",
+alliance:"The two countries formed an alliance.",
+anomaly:"The data contained one strange anomaly.",
+aspiration:"Her aspiration is to become an astronaut.",
+burden:"The loan became a heavy burden on the family.",
+catastrophe:"The earthquake was a terrible catastrophe.",
+compliance:"Compliance with safety rules is required.",
+controversy:"The decision caused great controversy.",
+criterion:"Price is the main criterion for many shoppers.",
+deficiency:"A vitamin deficiency can cause tiredness.",
+dilemma:"He faced a dilemma between family and career.",
+drawback:"The main drawback of the plan is its cost.",
+epidemic:"An epidemic of flu spread across the country.",
+fatigue:"Fatigue was a major cause of the accident.",
+hypothesis:"The experiment supported our hypothesis.",
+implication:"The report has serious implications for the industry.",
+legislation:"New legislation will protect consumers.",
+livelihood:"Fishing is the livelihood of many villagers.",
+outbreak:"An outbreak of fire closed the road.",
+prospect:"The prospect of moving abroad excites her.",
+remedy:"Rest is the best remedy for a cold.",
+setback:"The injury was a major setback for the team.",
+surplus:"The country has a surplus of rice.",
+threshold:"The temperature crossed the threshold of 30 degrees.",
+turmoil:"The country was in political turmoil.",
+welfare:"The government is responsible for public welfare.",
+bias:"The article shows a clear bias against small farms.",
+fraud:"He was arrested for credit card fraud.",
+obligation:"Parents have an obligation to care for their children.",
+verdict:"The jury reached a verdict after two days.",
+infrastructure:"The region needs better infrastructure.",
+acute:"She felt an acute pain in her knee.",
+adverse:"Adverse weather delayed the flight.",
+compatible:"This charger is compatible with most phones.",
+comprehensive:"The school offers a comprehensive training program.",
+crucial:"Sleep is crucial for good health.",
+diligent:"She is a diligent student who never skips class.",
+drastic:"The company took drastic measures to save money.",
+eligible:"Only adults are eligible to vote.",
+explicit:"The rules are explicit about late fees.",
+fragile:"Be careful; the glasses are fragile.",
+genuine:"This is a genuine antique, not a copy.",
+hazardous:"Hazardous waste must be handled carefully.",
+inherent:"Risk is inherent in any investment.",
+legitimate:"He has a legitimate reason for being late.",
+mandatory:"Attendance at the meeting is mandatory.",
+notorious:"The road is notorious for accidents.",
+profound:"The book had a profound influence on me.",
+prominent:"She is a prominent member of the community.",
+reckless:"Reckless driving caused the crash.",
+sophisticated:"The phone has a sophisticated camera system.",
+versatile:"Rice is a versatile food.",
+deliberately:"He deliberately ignored the warning.",
+predominantly:"The audience was predominantly young people.",
+virtually:"The task is virtually impossible.",
+impartial:"A judge must be impartial.",
+deduce:"From the footprints, he deduced that someone had been here."
+};
+
+/* ===== 組み込み追加語 書式: 英語|品詞|意味|例文|優先度(3高/2中/1低) ===== */
+const EXTRA=`
+enrich|動|豊かにする|Travel can enrich your life.|3
+urge|動|強く促す|Doctors urge people to get more exercise.|3
+inhibit|動|抑制する・妨げる|Fear can inhibit creativity.|3
+prior|形|事前の・前の|You need prior permission to enter the lab.|3
+dwell|動|住む・こだわる|There is no need to dwell on past mistakes.|3
+contrary|形|反対の|Contrary to expectations, sales fell.|3
+cite|動|引用する・例に挙げる|The author cited several studies in her paper.|3
+hinder|動|妨げる|Language barriers hinder communication.|3
+apparent|形|明らかな|It soon became apparent that he was lying.|3
+diversify|動|多様化する|The firm plans to diversify its products.|3
+merge|動|合併する|The two banks merged last year.|3
+extract|動|抽出する・引き出す|Oil is extracted from the seeds.|3
+defect|名|欠陥|The product was recalled because of a defect.|3
+discern|動|見分ける・識別する|It is hard to discern the truth from the rumors.|3
+undergo|動|経験する・(手術などを)受ける|He underwent surgery last week.|3
+prevail|動|優勢である・普及する|Common sense eventually prevailed.|3
+discourage|動|やる気をなくさせる・思いとどまらせる|High fees discourage young people from applying.|3
+accelerate|動|加速させる|The government wants to accelerate economic growth.|3
+assume|動|仮定する・思い込む|Don't assume that everyone agrees with you.|3
+contribute|動|貢献する・寄付する|Everyone contributed to the success of the event.|3
+correspond|動|一致する・文通する|The two sets of data correspond closely.|3
+transform|動|変える・一変させる|The Internet has transformed the way we work.|3
+sustainable|形|持続可能な|We need sustainable sources of energy.|3
+elaborate|形|精巧な・入念な|They made elaborate plans for the trip.|3
+assign|動|割り当てる|The teacher assigned a project to each group.|3
+devote|動|捧げる・充てる|He devotes every weekend to volunteer work.|3
+practical|形|実用的な|He gave me some practical advice.|3
+adjacent|形|隣接した|The hotel is adjacent to the station.|3
+implement|動|実行する・実施する|The school implemented a new reading program.|3
+dismiss|動|解雇する・退ける|The manager dismissed the idea as unrealistic.|3
+fundamental|形|基本的な・根本的な|Education is a fundamental human right.|3
+envision|動|思い描く|He envisioned a world without hunger.|3
+derive|動|由来する・得る|The word derives from Latin.|3
+commence|動|開始する|The ceremony will commence at noon.|3
+tangible|形|具体的な・触れられる|There is no tangible evidence of the theft.|3
+distribute|動|配布する・分配する|Volunteers distributed food to the victims.|3
+participate|動|参加する|Everyone is encouraged to participate in the discussion.|3
+reverse|動|逆転させる・覆す|The court reversed its earlier decision.|3
+convince|動|納得させる|He convinced me to try again.|3
+conduct|動|実施する・行う|Researchers conducted a survey of 500 students.|3
+ignore|動|無視する|He ignored the warning signs.|3
+grant|動|与える・認める|The school granted him a scholarship.|3
+predict|動|予測する|No one could predict the result of the election.|3
+clarify|動|明確にする|Could you clarify what you mean?|3
+conflict|名|対立・衝突|The conflict between the two groups continues.|3
+identical|形|同一の・そっくりの|The twins wore identical clothes.|3
+avert|動|避ける・防ぐ|Quick action averted a disaster.|3
+exceed|動|超える|The cost exceeded our budget.|3
+cease|動|やめる・終わる|The factory ceased production in March.|3
+donate|動|寄付する|He donated money to the hospital.|3
+oppose|動|反対する|Many residents oppose the new airport.|3
+execute|動|実行する・処刑する|The team executed the plan perfectly.|3
+restrict|動|制限する|The law restricts the sale of fireworks.|3
+flexible|形|柔軟な|The company offers flexible working hours.|3
+mitigate|動|緩和する|Trees help mitigate the effects of heat in cities.|3
+contradict|動|矛盾する・否定する|His actions contradict his words.|3
+pledge|動|誓う・約束する|The mayor pledged to improve public transport.|3
+valid|形|有効な・妥当な|Your passport must be valid for six months.|3
+unprecedented|形|前例のない|The city faced an unprecedented crisis.|3
+voluntary|形|自発的な|Participation in the survey is voluntary.|3
+formulate|動|策定する・明確に述べる|The committee formulated a new policy.|3
+constrain|動|制約する・抑える|Lack of funds constrained the project.|3
+widespread|形|広く行き渡った|There is widespread concern about the new law.|3
+authentic|形|本物の・信頼できる|The restaurant serves authentic Italian food.|3
+nominate|動|指名する・推薦する|He was nominated for the award.|3
+bankrupt|形|破産した|The company went bankrupt last year.|3
+indicate|動|示す|Recent data indicate a slight recovery.|3
+dedicate|動|捧げる|She dedicated her life to helping children.|3
+equivalent|形|同等の|One dollar was equivalent to about 150 yen.|3
+assess|動|評価する・査定する|Doctors assess each patient's condition carefully.|3
+attribute|動|〜のせいにする|She attributes her success to hard work.|3
+ample|形|十分な・たっぷりの|There is ample room for everyone.|3
+critical|形|批判的な・重大な|Water is critical to human survival.|3
+adapt|動|適応する・適合させる|Animals adapt to changes in their environment.|3
+attain|動|達成する・到達する|He attained his goal after years of effort.|3
+capable|形|能力のある|She is a capable and honest leader.|3
+severe|形|厳しい・深刻な|The region suffered severe drought.|3
+collapse|動|崩壊する・倒れる|The bridge collapsed during the storm.|3
+expand|動|拡大する|The company plans to expand overseas.|3
+resolve|動|解決する・決意する|They resolved the problem through discussion.|3
+undertake|動|引き受ける・着手する|She undertook the task of organizing the event.|3
+ethical|形|倫理的な|Doctors must follow strict ethical rules.|3
+launch|動|開始する・発売する|The firm will launch a new smartphone in May.|3
+dynamic|形|活動的な・動的な|She is a dynamic and creative leader.|3
+expose|動|さらす・暴露する|The report exposed serious safety problems.|3
+exhibit|動|展示する・示す|The museum exhibits works by local artists.|3
+convert|動|転換する・変える|They converted the old factory into a hotel.|3
+aggressive|形|攻撃的な・積極的な|The company launched an aggressive ad campaign.|3
+expire|動|期限が切れる|My passport expires next month.|3
+hence|副|それゆえ|The roads were icy; hence the delay.|3
+reveal|動|明らかにする|The survey revealed a surprising trend.|3
+devise|動|考案する|Engineers devised a simple way to save energy.|3
+confirm|動|確認する|Please confirm your reservation by email.|3
+immense|形|巨大な・莫大な|The project requires immense effort.|3
+confine|動|閉じ込める・限定する|Please confine your remarks to the topic.|3
+impair|動|損なう・弱める|Noise can impair concentration.|3
+enroll|動|登録する・入学する|She enrolled in a night course.|3
+evident|形|明白な|Her disappointment was evident to everyone.|3
+extinct|形|絶滅した|Dinosaurs became extinct millions of years ago.|3
+consecutive|形|連続した|It rained for five consecutive days.|3
+compel|動|強いる|The law compels companies to report accidents.|3
+demonstrate|動|実証する・示す|The experiment demonstrated that the theory was correct.|3
+designate|動|指定する|The area was designated a national park.|3
+dominate|動|支配する・優位に立つ|One company dominates the market.|3
+diminish|動|減る・減らす|Public interest in the topic has diminished.|3
+emphasize|動|強調する|The teacher emphasized the importance of practice.|3
+enthusiasm|名|熱意|The students showed great enthusiasm for the project.|3
+prosper|動|繁栄する|Small businesses prospered in the town.|3
+guarantee|動|保証する|The shop guarantees the quality of its products.|3
+establish|動|設立する・確立する|The school was established in 1900.|3
+coincide|動|同時に起こる・一致する|My vacation coincides with the local festival.|3
+endeavor|名|努力・試み|Climbing the mountain was a difficult endeavor.|3
+recruit|動|採用する・募集する|The company recruits new graduates every spring.|3
+illustrate|動|例を挙げて説明する|This graph illustrates the change in sales.|3
+commit|動|(罪などを)犯す・約束する|He committed a serious crime.|3
+consistent|形|一貫した|His story is not consistent with the facts.|3
+presume|動|推定する・〜と思い込む|I presume you have already eaten.|3
+foster|動|育成する・促進する|The program fosters creativity in children.|3
+appoint|動|任命する|She was appointed head of the department.|3
+discriminate|動|差別する・区別する|It is illegal to discriminate on the basis of age.|3
+constitute|動|〜を構成する|Women constitute half of the workforce.|3
+preserve|動|保存する・保護する|We must preserve the forests for future generations.|3
+impulse|名|衝動|She bought the bag on impulse.|3
+exclusive|形|独占的な・排他的な|The store has exclusive rights to sell the product.|3
+conserve|動|節約する・保存する|We should conserve water during the summer.|3
+estimate|動|見積もる・推定する|Experts estimate that the work will take two years.|3
+dispose|動|処分する|Please dispose of garbage properly.|3
+consult|動|相談する・参照する|You should consult a doctor.|3
+devastate|動|荒廃させる・打ちのめす|The earthquake devastated the town.|3
+defy|動|逆らう・ものともしない|The protesters defied the ban.|3
+denounce|動|非難する|Leaders denounced the violence.|3
+exempt|形|免除された|Students are exempt from the fee.|3
+boost|動|押し上げる・高める|Tourism boosted the local economy.|3
+significant|形|重要な・著しい|There was a significant rise in prices.|3
+reform|名|改革|The government promised tax reform.|3
+delegate|動|(権限を)委任する|A good manager knows how to delegate tasks.|3
+diverse|形|多様な|The city has a diverse population.|3
+overlook|動|見落とす・大目に見る|I overlooked a spelling mistake in the report.|3
+distinct|形|はっきり異なる・明瞭な|The two species are quite distinct.|3
+generate|動|生み出す|Wind farms generate clean electricity.|3
+qualify|動|資格を得る・資格を与える|She qualified for the national team.|3
+proceed|動|進む・続ける|Please proceed to gate 12.|3
+hesitate|動|ためらう|Don't hesitate to ask questions.|3
+maintain|動|維持する・主張する|She maintained that she was innocent.|3
+cope|動|うまく対処する|She is learning to cope with stress.|3
+crisis|名|危機|The country is facing an economic crisis.|3
+rely|動|頼る|Many people rely on public transport.|3
+reject|動|拒否する|The committee rejected his proposal.|3
+oversee|動|監督する|A manager oversees the whole project.|3
+overcome|動|克服する|She overcame her fear of flying.|3
+tension|名|緊張・緊迫|Tension between the two countries is rising.|2
+vivid|形|鮮明な・生き生きした|I have vivid memories of that day.|2
+phenomenon|名|現象|Global warming is a worldwide phenomenon.|2
+plague|動|悩ませる・苦しめる|The team was plagued by injuries.|2
+arrogant|形|傲慢な|He is too arrogant to ask for help.|2
+proportion|名|割合・釣り合い|A large proportion of students walk to school.|2
+competent|形|有能な|She is a competent manager.|2
+complicated|形|複雑な|The rules are too complicated.|2
+obedient|形|従順な|The dog is obedient and calm.|2
+barrier|名|障壁|Language can be a barrier to trade.|2
+pertinent|形|関連のある|Please include only pertinent information.|2
+adequate|形|十分な・適切な|The room was adequate for our needs.|2
+warrant|動|正当化する・値する|The situation warrants immediate action.|2
+opponent|名|対戦相手・反対者|He defeated his opponent in the final.|2
+wholesome|形|健全な・健康によい|The cafe serves wholesome food.|2
+oust|動|追い出す・解任する|The board ousted the president.|2
+municipal|形|市の・地方自治体の|The municipal library closes at six.|2
+enormous|形|巨大な|The project requires an enormous budget.|2
+indifferent|形|無関心な|He seems indifferent to politics.|2
+deposit|名|預金・手付金|He paid a deposit on the apartment.|2
+stern|形|厳格な・厳しい|The teacher gave a stern warning.|2
+gradual|形|徐々の|There has been a gradual improvement.|2
+predecessor|名|前任者|The new CEO praised his predecessor.|2
+shatter|動|粉々にする・打ち砕く|The glass shattered on the floor.|2
+lapse|名|小さな誤り・経過|A brief lapse in concentration caused the error.|2
+passive|形|受け身の・消極的な|He took a passive role in the meeting.|2
+inflict|動|(損害・苦痛を)与える|The storm inflicted heavy damage on the coast.|2
+forecast|名|予報・予測|The forecast says it will snow.|2
+ponder|動|熟考する|He pondered his next move.|2
+ridicule|動|あざ笑う|Classmates ridiculed his accent.|2
+scope|名|範囲|The scope of the study is limited.|2
+proliferate|動|急増する・増殖する|Fake websites have proliferated online.|2
+renowned|形|有名な|The town is renowned for its hot springs.|2
+partial|形|部分的な・不公平な|We received only partial payment.|2
+fierce|形|激しい・猛烈な|There was fierce competition for the job.|2
+capacity|名|収容能力・能力|The hall has a capacity of 500.|2
+ravage|動|荒らす・荒廃させる|Floods ravaged the farmland.|2
+stagnant|形|停滞した|The economy has been stagnant for years.|2
+relinquish|動|手放す|He relinquished control of the company.|2
+yield|動|生み出す・譲る|The experiment yielded surprising results.|2
+zeal|名|熱意|He worked with great zeal.|2
+ultimate|形|最終的な・究極の|Our ultimate goal is world peace.|2
+nurture|動|育てる・育む|Good teachers nurture a love of learning.|2
+relevant|形|関連した|Please attach all relevant documents.|2
+alter|動|変える|We had to alter our plans.|2
+perpetual|形|絶え間ない|They lived in perpetual fear of war.|2
+oblige|動|義務づける・恩恵を施す|The law obliges employers to pay overtime.|2
+insulate|動|断熱する・隔離する|The walls are insulated against the cold.|2
+brisk|形|活発な・きびきびした|We took a brisk walk along the river.|2
+confidential|形|機密の|The files are strictly confidential.|2
+precaution|名|予防措置|Take precautions against theft.|2
+overwhelm|動|圧倒する|She was overwhelmed by the kindness of strangers.|2
+vanish|動|消える|The magician made the coin vanish.|2
+flaw|名|欠点・欠陥|The plan has a serious flaw.|2
+revive|動|復活させる|The festival was revived after ten years.|2
+sporadic|形|散発的な|Sporadic fighting continued in the area.|2
+backdrop|名|背景|Mountains formed a stunning backdrop.|2
+retaliate|動|報復する|The country threatened to retaliate.|2
+nonetheless|副|それでもなお|The task was hard; nonetheless, we finished it.|2
+bribe|名|賄賂|The official refused to take a bribe.|2
+pretend|動|ふりをする|He pretended not to hear me.|2
+frontier|名|国境・最前線|Space is the final frontier.|2
+thrifty|形|倹約的な|My grandmother was a thrifty woman.|2
+permanent|形|永久の・常設の|She finally got a permanent job.|2
+remarkable|形|注目すべき・目覚ましい|She made remarkable progress.|2
+likelihood|名|可能性|There is little likelihood of rain tomorrow.|2
+subsequent|形|その後の|Subsequent events proved him right.|2
+invade|動|侵略する・侵害する|The army invaded the neighboring country.|2
+trait|名|特性|Honesty is her best trait.|2
+comprehend|動|理解する|I cannot comprehend his decision.|2
+decline|動|減少する・断る|Sales have declined for three years.|2
+occupy|動|占める・従事させる|The meeting room is occupied until noon.|2
+swift|形|迅速な|The police took swift action.|2
+dense|形|密集した・濃い|A dense fog covered the town.|2
+offset|動|相殺する|Higher sales offset the rise in costs.|2
+lavish|形|豪華な・惜しみない|They held a lavish wedding party.|2
+inclined|形|〜する傾向がある|I am inclined to agree with her.|2
+squander|動|浪費する|He squandered his inheritance.|2
+supplement|名|補足・栄養補助食品|She takes a vitamin supplement every day.|2
+summon|動|呼び出す・召集する|The manager summoned all staff to the hall.|2
+inhabit|動|住んでいる|Wolves once inhabited most of the region.|2
+secure|動|確保する・守る|She secured a place at a top university.|2
+vital|形|極めて重要な|Exercise is vital to good health.|2
+simultaneous|形|同時の|The two events were simultaneous.|2
+innovative|形|革新的な|The firm is known for its innovative designs.|2
+recede|動|後退する・引く|The floodwater slowly receded.|2
+leverage|名|影響力・てこの力|Our large size gives us leverage in negotiations.|2
+urban|形|都会の|Urban life can be stressful.|2
+tolerate|動|我慢する・許容する|I cannot tolerate such rude behavior.|2
+ongoing|形|進行中の|The ongoing talks may end soon.|2
+radical|形|急進的な・根本的な|The company made radical changes.|2
+provisional|形|暫定的な|A provisional government was formed.|2
+volatile|形|不安定な・変動しやすい|Oil prices are very volatile.|2
+sensible|形|分別のある・賢明な|It was a sensible decision.|2
+rampant|形|蔓延した|Crime was rampant in the city.|2
+precise|形|正確な|Please give me precise directions.|2
+assure|動|保証する・安心させる|I assure you that it is safe.|2
+weary|形|疲れた・うんざりした|He felt weary after the long trip.|2
+staple|名|主要産物・主食|Rice is the staple food of Asia.|2
+loyal|形|忠実な|Loyal customers receive a special discount.|2
+submit|動|提出する・服従する|Please submit your report by Friday.|2
+withstand|動|耐える|The building can withstand strong earthquakes.|2
+obscure|形|不明瞭な・無名の|The origin of the custom is obscure.|2
+resolute|形|断固とした|She remained resolute in the face of criticism.|2
+commodity|名|商品・必需品|Oil is a valuable commodity.|2
+cluster|名|集団・群れ|A cluster of houses stood near the lake.|2
+credible|形|信頼できる|There is no credible evidence.|2
+exclude|動|除外する|Tax is excluded from the price.|2
+durable|形|耐久性のある|The bag is made of durable cloth.|2
+rational|形|理性的な・合理的な|Let's make a rational decision.|2
+revenue|名|収入・歳入|Tourism brings in large revenue.|2
+render|動|〜にする・提供する|The news rendered him speechless.|2
+vast|形|広大な・莫大な|The desert covers a vast area.|2
+affluent|形|裕福な|They live in an affluent neighborhood.|2
+steadfast|形|揺るぎない|He was steadfast in his support.|2
+void|形|無効の|The contract was declared void.|2
+resemble|動|似ている|She closely resembles her mother.|2
+pessimistic|形|悲観的な|Experts are pessimistic about the economy.|2
+subtle|形|微妙な・繊細な|There is a subtle difference in taste.|2
+oblivious|形|気づいていない|She was oblivious to the noise around her.|2
+amplify|動|増幅する|The speakers amplify the sound.|2
+temporary|形|一時的な|He took a temporary job.|2
+spontaneous|形|自発的な・自然に起こる|The crowd gave a spontaneous cheer.|2
+reside|動|居住する|He resides in a small village.|2
+reinforce|動|強化する|The wall was reinforced with steel.|2
+sole|形|唯一の|She was the sole survivor.|2
+consumption|名|消費|Energy consumption has doubled.|2
+stigma|名|汚名・偏見|There is still a stigma attached to mental illness.|2
+lag|動|遅れをとる|Japan lags behind other countries in this area.|2
+terminate|動|終了させる|The contract was terminated last week.|2
+insight|名|洞察|The book offers fresh insight into human behavior.|2
+parallel|形|平行な・類似した|The two roads run parallel to each other.|2
+prone|形|〜しやすい|This area is prone to flooding.|2
+vacant|形|空いている|The position has been vacant for a month.|2
+vague|形|あいまいな|He gave a vague answer.|2
+ordeal|名|試練・つらい体験|The hostages survived a terrible ordeal.|2
+intimate|形|親密な|They have an intimate friendship.|2
+priority|名|優先事項|Safety is our top priority.|2
+quest|名|探求・探索|The quest for a cure continues.|2
+shrewd|形|抜け目のない|He is a shrewd businessman.|2
+perish|動|滅びる・死ぬ|Many plants perish in the frost.|2
+obstacle|名|障害|Lack of money is the main obstacle.|2
+reckon|動|思う・数える|I reckon it will rain tonight.|2
+replicate|動|複製する・再現する|Other scientists could not replicate the results.|2
+pioneer|名|先駆者|She was a pioneer in women's sports.|2
+trivial|形|ささいな|Don't worry about such a trivial matter.|2
+prohibitive|形|(費用が)法外な・禁止的な|The cost of living there is prohibitive.|2
+chaos|名|大混乱|Heavy snow caused chaos on the roads.|2
+restrain|動|抑える・制止する|He could hardly restrain his anger.|2
+inspect|動|検査する|Officers inspected every bag at the gate.|2
+turbulent|形|荒れた・騒然とした|The country had a turbulent history.|2
+witness|動|目撃する|Several people witnessed the accident.|2
+solitary|形|孤独な・単独の|He leads a solitary life in the woods.|2
+slender|形|ほっそりした・わずかな|He won by a slender margin.|2
+solemn|形|厳粛な|The president made a solemn promise.|2
+remnant|名|名残・残り|Only a few remnants of the castle remain.|2
+tedious|形|退屈な|The work was long and tedious.|2
+sway|動|揺れる・左右する|The speech swayed many voters.|2
+rebel|動|反抗する|Teenagers often rebel against their parents.|2
+vicious|形|悪意のある・凶暴な|He was the victim of a vicious attack.|2
+pitfall|名|落とし穴|Beware of the pitfalls of online shopping.|2
+recover|動|回復する・取り戻す|He is recovering from a bad cold.|2
+sacred|形|神聖な|The mountain is sacred to local people.|2
+venture|名|冒険的事業|It was a risky business venture.|2
+retreat|動|退く・撤退する|The army retreated to the hills.|2
+transparent|形|透明な・透明性のある|The company promised to be transparent.|2
+protocol|名|手順・議定書|Follow the safety protocol at all times.|2
+sympathy|名|同情・共感|We sent a card to express our sympathy.|2
+obtain|動|手に入れる|You can obtain a visa at the airport.|2
+suppress|動|抑圧する・抑える|The government suppressed the protest.|2
+casualty|名|死傷者・犠牲者|There were no casualties in the fire.|2
+portray|動|描く・演じる|The film portrays life in the 1920s.|2
+resort|名|手段・行楽地|Strikes are the last resort.|2
+prescribe|動|処方する・規定する|The doctor prescribed some medicine.|2
+instinct|名|本能・直感|Animals follow their instinct to survive.|2
+probe|動|徹底的に調べる|Reporters probed the cause of the scandal.|2
+juvenile|形|少年の・未熟な|Juvenile crime has been decreasing.|2
+eager|形|熱望して|The children are eager to go.|2
+rural|形|田舎の|Rural areas are losing population.|2
+uphold|動|支持する・維持する|The court will uphold the original decision.|2
+intricate|形|入り組んだ・複雑な|The watch has an intricate mechanism.|2
+repel|動|追い払う・はね返す|This spray repels mosquitoes.|2
+intense|形|激しい・強烈な|The players trained under intense pressure.|2
+defendant|名|被告|The defendant pleaded not guilty.|2
+reap|動|収穫する・(成果を)得る|They reaped the rewards of hard work.|2
+premise|名|前提|The argument is based on a false premise.|2
+preventive|形|予防の|Regular checkups are a preventive measure.|2
+keen|形|熱心な・鋭い|She has a keen interest in astronomy.|2
+proponent|名|支持者・提唱者|He is a strong proponent of free trade.|2
+vertical|形|垂直の|The cliff is almost vertical.|2
+beneficial|形|有益な|Exercise is beneficial to health.|2
+prestige|名|名声・威信|The university has great prestige.|2
+assemble|動|集める・組み立てる|Workers assemble the parts by hand.|2
+sibling|名|きょうだい|She has no siblings.|2
+tribute|名|賛辞・貢物|Fans paid tribute to the singer.|2
+seldom|副|めったに〜ない|He seldom eats out.|2
+pursuit|名|追求・追跡|The pursuit of happiness is a basic right.|2
+outcome|名|結果|Nobody knows the outcome of the talks.|2
+sufficient|形|十分な|We do not have sufficient evidence.|2
+invariably|副|例外なく・いつも|He is invariably late for meetings.|2
+abandon|動|見捨てる・放棄する|The crew abandoned the sinking ship.|2
+sparse|形|まばらな|The region has a sparse population.|2
+revolt|名|反乱・反抗|The revolt was quickly put down.|2
+redundant|形|余分な・冗長な|Many workers were made redundant.|2
+concentrate|動|集中する|I can't concentrate with this noise.|2
+inquiry|名|調査・問い合わせ|The police have opened an inquiry into the accident.|2
+optimal|形|最適な|This is the optimal time to plant tomatoes.|2
+unanimous|形|満場一致の|The vote was unanimous.|2
+scarce|形|乏しい・不足した|Food was scarce during the winter.|2
+segment|名|区分・部分|The company targets a new market segment.|2
+viable|形|実行可能な|The plan is not economically viable.|2
+transient|形|一時的な・つかの間の|The town has a large transient population.|2
+sensitive|形|敏感な・繊細な|Her skin is sensitive to sunlight.|2
+originate|動|起こる・生じる|The festival originated in the 17th century.|2
+counterpart|名|対応する人・物|The minister met his Korean counterpart.|2
+thorough|形|徹底的な|The police made a thorough search.|2
+agile|形|機敏な|The cat is agile and quick.|2
+institute|動|設ける・導入する|The school instituted a new dress code.|2
+blend|動|混ぜる・調和する|Blend the flour and the butter together.|2
+astonish|動|ひどく驚かせる|The news astonished everyone.|2
+scatter|動|まき散らす・散らばる|Papers were scattered across the floor.|2
+interfere|動|干渉する・邪魔をする|Don't interfere in other people's business.|2
+bulk|名|大部分・かさ|The bulk of the work is done.|2
+incorporate|動|組み込む|The design incorporates several new ideas.|2
+robust|形|頑丈な・力強い|The economy showed robust growth.|2
+induce|動|引き起こす・誘導する|The drug may induce sleep.|2
+preliminary|形|予備の・準備的な|The preliminary results look promising.|2
+prompt|形|迅速な|Thank you for your prompt reply.|2
+prudent|形|慎重な・賢明な|It is prudent to save some money.|2
+reconsider|動|再考する|Please reconsider your decision.|2
+reproach|動|非難する|She reproached him for being late.|2
+paradox|名|逆説・矛盾|It is a paradox that wealth can bring unhappiness.|2
+isolate|動|孤立させる・隔離する|Patients with the virus were isolated.|2
+liable|形|責任がある・〜しがちな|The company is liable for the damage.|2
+magnitude|名|大きさ・規模|The earthquake had a magnitude of 6.2.|2
+strive|動|努力する|We strive to improve our service.|2
+respective|形|それぞれの|The two men returned to their respective homes.|2
+ambition|名|野心・大望|Her ambition is to become a pilot.|2
+sluggish|形|不振の・のろい|The economy remains sluggish.|2
+mundane|形|平凡な・日常的な|He was bored by his mundane tasks.|2
+considerable|形|かなりの|The storm caused considerable damage.|2
+evoke|動|呼び起こす|The song evoked memories of childhood.|1
+brink|名|瀬戸際|The company is on the brink of collapse.|1
+digress|動|脱線する|Sorry, I digressed from the main topic.|1
+conspire|動|共謀する|They conspired to overthrow the government.|1
+camouflage|名|偽装・迷彩|The insect uses camouflage to hide.|1
+amend|動|修正する・改正する|The parliament amended the law.|1
+desolate|形|荒涼とした・わびしい|The desert was cold and desolate.|1
+irrational|形|不合理な|He has an irrational fear of dogs.|1
+arid|形|乾燥した|The region is hot and arid.|1
+foresee|動|予見する|No one could foresee the problem.|1
+devout|形|信心深い|She is a devout Buddhist.|1
+inept|形|不器用な・無能な|He was inept at managing money.|1
+clandestine|形|秘密の|They held clandestine meetings.|1
+flourish|動|繁栄する・栄える|Small shops flourished in the area.|1
+adhere|動|固く守る・くっつく|All members must adhere to the guidelines.|1
+chronic|形|慢性的な|He suffers from chronic back pain.|1
+encompass|動|包含する・取り囲む|The course encompasses many topics.|1
+crave|動|切望する|The child craved attention.|1
+harbor|動|(感情などを)抱く|He harbors a grudge against his boss.|1
+drought|名|干ばつ|The drought ruined this year's harvest.|1
+frantic|形|大慌ての・狂乱の|There was a frantic search for the missing child.|1
+jubilant|形|歓喜に満ちた|The fans were jubilant after the win.|1
+congregate|動|集まる|Fans congregated outside the stadium.|1
+cunning|形|ずる賢い|The fox is a cunning animal.|1
+indispensable|形|不可欠な|Water is indispensable to life.|1
+habitat|名|生息地|The forest is the habitat of many rare birds.|1
+hereditary|形|遺伝性の・世襲の|The disease is hereditary.|1
+insatiable|形|飽くことのない|He has an insatiable appetite for knowledge.|1
+adversary|名|敵対者|He defeated his old adversary.|1
+accountable|形|説明責任がある|Leaders must be accountable to the public.|1
+derelict|形|放置された・荒れ果てた|They bought a derelict warehouse.|1
+implicit|形|暗黙の|There was an implicit threat in his words.|1
+cohesion|名|結束|The team lacks cohesion.|1
+mimic|動|まねる|The parrot can mimic human speech.|1
+meddle|動|おせっかいをする|Don't meddle in my affairs.|1
+brittle|形|もろい|The old paper was dry and brittle.|1
+appease|動|なだめる・譲歩する|The manager tried to appease angry customers.|1
+flaunt|動|見せびらかす|He likes to flaunt his wealth.|1
+astute|形|鋭い・抜け目のない|She is an astute observer of politics.|1
+daunting|形|気が遠くなるような|She faced the daunting task of rebuilding the town.|1
+hierarchy|名|階層制|There is a strict hierarchy in the company.|1
+abide|動|(規則などに)従う・我慢する|You must abide by the rules.|1
+eminent|形|著名な|He is an eminent scientist.|1
+distraught|形|取り乱した|She was distraught when she heard the news.|1
+absurd|形|ばかげた|It is absurd to expect such a result.|1
+deficit|名|赤字・不足|The country has a large budget deficit.|1
+forsake|動|見捨てる|He would never forsake his friends.|1
+adept|形|熟達した|He is adept at solving puzzles.|1
+fervent|形|熱烈な|He is a fervent supporter of the team.|1
+circumvent|動|回避する・迂回する|Some firms circumvent the rules.|1
+compassion|名|思いやり・同情|She showed great compassion for the poor.|1
+grim|形|厳しい・陰鬱な|The doctor had grim news.|1
+concise|形|簡潔な|Please keep your report concise.|1
+bleak|形|暗い・荒涼とした|The future looks bleak for the industry.|1
+fathom|動|(深く)理解する|I cannot fathom why he left.|1
+hoax|名|でっち上げ・デマ|The bomb threat turned out to be a hoax.|1
+curtail|動|切り詰める・短縮する|The company curtailed its spending.|1
+appraise|動|評価する・査定する|An expert appraised the old painting.|1
+austere|形|厳格な・飾り気のない|They lived an austere life.|1
+deplore|動|嘆く・非難する|The mayor deplored the violence.|1
+empathy|名|共感|Good doctors show empathy for patients.|1
+adjourn|動|休会する・延期する|The court adjourned until Monday.|1
+belittle|動|見くびる・けなす|Don't belittle her achievements.|1
+benevolent|形|慈悲深い・善意の|A benevolent donor paid for the new library.|1
+mirage|名|蜃気楼・幻想|The lake turned out to be a mirage.|1
+deflect|動|そらす|He tried to deflect criticism.|1
+affirm|動|断言する・確認する|The study affirmed the value of sleep.|1
+inaugurate|動|就任させる・開始する|The new president was inaugurated in January.|1
+gloomy|形|陰気な・暗い|The forecast is gloomy.|1
+dormant|形|休眠中の|The volcano has been dormant for centuries.|1
+commend|動|称賛する|The firefighters were commended for their bravery.|1
+ephemeral|形|はかない・短命の|Fame is often ephemeral.|1
+lethal|形|致命的な|The snake's venom is lethal.|1
+blunder|名|大失敗|The mayor's blunder cost him the election.|1
+coax|動|なだめすかして〜させる|She coaxed the cat out of the tree.|1
+boisterous|形|騒々しい・元気のいい|The boisterous crowd cheered loudly.|1
+extravagant|形|浪費的な・贅沢な|He lives an extravagant lifestyle.|1
+corroborate|動|裏付ける|Several witnesses corroborated his story.|1
+emancipate|動|解放する|The law emancipated the slaves.|1
+entrepreneur|名|起業家|She is a successful young entrepreneur.|1
+fiasco|名|大失敗|The event turned into a complete fiasco.|1
+cordial|形|心のこもった|They gave us a cordial welcome.|1
+candid|形|率直な|She gave a candid opinion of the plan.|1
+embark|動|乗り出す・乗船する|They embarked on a new career.|1
+barren|形|不毛の|The land was dry and barren.|1
+intrinsic|形|本質的な|Money has no intrinsic value.|1
+coerce|動|強要する|He was coerced into signing the paper.|1
+bequeath|動|遺贈する|She bequeathed her house to her nephew.|1
+fertile|形|肥沃な・豊かな|The valley has fertile soil.|1
+dogmatic|形|独断的な|He is dogmatic about his opinions.|1
+fallacy|名|誤り・誤った考え|It is a fallacy that money brings happiness.|1
+frugal|形|質素な・倹約的な|She leads a frugal life.|1
+berate|動|厳しく叱る|The coach berated the players.|1
+ingenious|形|独創的な・巧妙な|It was an ingenious solution.|1
+disparity|名|格差|There is a wide disparity in income.|1
+elusive|形|とらえどころのない|The criminal remained elusive.|1
+complement|動|補完する|The wine complements the meal well.|1
+mediocre|形|平凡な・二流の|The food at the restaurant was mediocre.|1
+enact|動|制定する|Parliament enacted a new law.|1
+forfeit|動|(権利などを)失う|He forfeited his right to appeal.|1
+auspicious|形|縁起のよい|It was an auspicious start to the season.|1
+deem|動|〜とみなす|The area was deemed unsafe.|1
+intrigue|動|興味をそそる|The story intrigued me.|1
+analogy|名|類似・たとえ|The teacher drew an analogy between the heart and a pump.|1
+emulate|動|見習う・まねる|Young players try to emulate their heroes.|1
+barter|動|物々交換する|They bartered corn for tools.|1
+capitulate|動|屈服する|The rebels finally capitulated.|1
+infer|動|推論する|We can infer a lot from these figures.|1
+expedite|動|促進する・迅速に処理する|We will expedite your request.|1
+loophole|名|抜け穴|The company found a loophole in the law.|1
+dilapidated|形|荒れ果てた|They live in a dilapidated house.|1
+adamant|形|頑として譲らない|She was adamant that she would not go.|1
+meager|形|乏しい|He lived on a meager income.|1
+eloquent|形|雄弁な|She gave an eloquent speech.|1
+famine|名|飢饉|Thousands died in the famine.|1
+entice|動|誘惑する・引きつける|Low prices entice customers.|1
+haughty|形|傲慢な|She gave him a haughty look.|1
+dissent|名|反対意見|There was little dissent among the members.|1
+integrity|名|誠実さ・完全性|A judge must have integrity.|1
+deceive|動|だます|Don't let appearances deceive you.|1
+apathy|名|無関心|Voter apathy remains a problem.|1
+assail|動|猛攻撃する・悩ませる|Critics assailed the new policy.|1
+collateral|名|担保|He used his house as collateral for the loan.|1
+acclaim|名|称賛|The film received critical acclaim.|1
+exemplify|動|例証する・典型である|This building exemplifies modern design.|1
+abrupt|形|突然の・ぶっきらぼうな|The meeting came to an abrupt end.|1
+bountiful|形|豊富な|The farm had a bountiful harvest.|1
+backlash|名|激しい反発|The tax plan caused a public backlash.|1
+lenient|形|寛大な|The judge was lenient with the young man.|1
+hone|動|磨く|She honed her skills through practice.|1
+inundate|動|殺到する・水浸しにする|The office was inundated with calls.|1
+blatant|形|あからさまな|It was a blatant lie.|1
+bombard|動|(質問などを)浴びせる・砲撃する|Reporters bombarded her with questions.|1
+ascend|動|上る・昇進する|The climbers ascended the steep slope.|1
+hectic|形|慌ただしい|I had a hectic week at work.|1
+embezzle|動|横領する|He embezzled money from the company.|1
+haphazard|形|行き当たりばったりの|The files were stored in a haphazard way.|1
+degrade|動|品位を落とす・劣化させる|The fumes degrade the quality of the air.|1
+infiltrate|動|潜入する・浸透する|Spies infiltrated the organization.|1
+erratic|形|不規則な・気まぐれな|His behavior has become erratic.|1
+divulge|動|漏らす|He refused to divulge the secret.|1
+decipher|動|解読する|Nobody could decipher his handwriting.|1
+insolent|形|無礼な|The insolent boy refused to apologize.|1
+banish|動|追放する・払いのける|The king banished him from the country.|1
+affable|形|愛想のよい|She is an affable and friendly host.|1
+indignant|形|憤慨した|She was indignant at the unfair treatment.|1
+admonish|動|諭す・厳しく注意する|The teacher admonished him for being late.|1
+convoluted|形|入り組んだ・複雑な|The plot of the novel is too convoluted.|1
+innate|形|生まれつきの|She has an innate sense of rhythm.|1
+detach|動|切り離す|Please detach the form and return it.|1
+disdain|名|軽蔑|He looked at the offer with disdain.|1
+exorbitant|形|法外な|The hotel charged exorbitant prices.|1
+condone|動|大目に見る・容認する|We cannot condone cheating.|1
+fickle|形|気まぐれな|The weather here is fickle.|1
+enigma|名|謎|The origin of the stone remains an enigma.|1
+exodus|名|大量出国・流出|There was an exodus of workers from the village.|1
+eradicate|動|根絶する|The disease was nearly eradicated.|1
+assimilate|動|吸収する・同化する|It takes time to assimilate so much information.|1
+fabricate|動|でっち上げる・製造する|The witness fabricated a story.|1
+lucid|形|明快な・正気の|She gave a lucid explanation.|1
+feeble|形|弱々しい|She gave a feeble smile.|1
+dwindle|動|次第に減る|Our savings dwindled quickly.|1
+ensue|動|続いて起こる|A heated debate ensued.|1
+impede|動|妨げる|Heavy snow impeded the rescue work.|1
+composure|名|落ち着き|He kept his composure under pressure.|1
+impending|形|差し迫った|The villagers feared the impending storm.|1
+aloof|形|よそよそしい・距離を置いた|He remained aloof from the discussion.|1
+antagonize|動|敵対させる・怒らせる|Don't antagonize your neighbors.|1
+gratify|動|満足させる|It gratified him to see her succeed.|1
+gullible|形|だまされやすい|Gullible people believe everything.|1
+discreet|形|慎重な・口の堅い|Be discreet about the matter.|1
+grudge|名|恨み|She bears a grudge against her former boss.|1
+bureaucracy|名|官僚制・お役所仕事|Too much bureaucracy slows down the process.|1
+dispatch|動|派遣する・発送する|Troops were dispatched to the area.|1
+incessant|形|絶え間ない|The incessant noise kept me awake.|1
+indulge|動|ふける・甘やかす|He indulged in a slice of cake.|1
+avalanche|名|雪崩・殺到|An avalanche buried the road.|1
+exasperate|動|ひどく怒らせる|His constant excuses exasperated me.|1
+elated|形|大喜びの|She was elated at the news.|1
+ascertain|動|確かめる|Police tried to ascertain the cause of the fire.|1
+jargon|名|専門用語|The report was full of technical jargon.|1
+hypocrisy|名|偽善|He was accused of hypocrisy.|1
+clumsy|形|不器用な|I am clumsy with my hands.|1
+augment|動|増やす・増大させる|He augmented his income by teaching at night.|1
+apprehensive|形|心配な・不安な|She felt apprehensive about the exam.|1
+formidable|形|手ごわい|They faced a formidable opponent.|1
+malice|名|悪意|He acted without malice.|1
+contingent|形|〜次第の|The trip is contingent on the weather.|1
+compulsory|形|義務的な・必修の|English is a compulsory subject.|1
+impromptu|形|即席の|She gave an impromptu speech.|1
+commemorate|動|記念する|A statue commemorates the victory.|1
+lament|動|嘆く|He lamented the loss of his old friends.|1
+discord|名|不和|Money often causes discord in families.|1
+illicit|形|違法な・不正な|The police seized illicit drugs.|1
+eccentric|形|風変わりな|He is an eccentric old artist.|1
+gregarious|形|社交的な|He is a gregarious and cheerful man.|1
+futile|形|無駄な|All efforts to save him were futile.|1
+diverge|動|分かれる・逸れる|The two roads diverge here.|1
+arduous|形|骨の折れる|They made an arduous journey over the mountains.|1
+detrimental|形|有害な|Smoking is detrimental to your health.|1
+audacious|形|大胆な|It was an audacious plan.|1
+envoy|名|使節・特使|The envoy met the foreign minister.|1
+avid|形|熱心な|He is an avid reader of history.|1
+atrocity|名|残虐行為|The report described atrocities committed during the war.|1
+confer|動|協議する・授与する|The doctors conferred about the treatment.|1
+ardent|形|熱烈な|He is an ardent fan of the band.|1
+disseminate|動|広める|The group disseminates information online.|1
+decree|名|法令・命令|The king issued a decree.|1
+buoyant|形|活気のある・浮力のある|The market remained buoyant.|1
+bewilder|動|当惑させる|The complicated rules bewildered me.|1
+consolidate|動|強化する・統合する|The firm consolidated its position in the market.|1
+espouse|動|支持する・信奉する|She espouses the cause of animal rights.|1
+`;
+EXTRA.trim().split(/\r?\n/).forEach(l=>{const p=l.split("|");WORDS.push([p[0],p[1],p[2],+p[4]]);EX[p[0]]=p[3]});
+BASE=WORDS.slice();
+/* ===== 共通ユーティリティ ===== */
+const pad=n=>String(n).padStart(2,"0");
+const dkey=(d=new Date())=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const addDays=(k,n)=>{const[y,m,d]=k.split("-").map(Number);return dkey(new Date(y,m-1,d+n))};
+const diffDays=(a,b)=>{const[y1,m1,d1]=a.split("-").map(Number),[y2,m2,d2]=b.split("-").map(Number);return Math.round((Date.UTC(y2,m2-1,d2)-Date.UTC(y1,m1-1,d1))/864e5)};
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function lev(a,b){const m=a.length,n=b.length,d=Array.from({length:m+1},(_,i)=>[i]);for(let j=1;j<=n;j++)d[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[m][n]}
+function hl(en,s){const stem=en.length>6?en.slice(0,-3):en.slice(0,Math.max(3,en.length-2));
+  return esc(s).replace(new RegExp("\\b("+stem+"\\w*)","i"),"<mark>$1</mark>")}
+const spkIcon=`<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+const spkBtn=(t,cls="")=>`<button class="spk ${cls}" data-say="${esc(t)}" aria-label="発音を聞く">${spkIcon}</button>`;
+
+/* ===== 状態 ===== */
+let S;
+function fresh(){return{cards:{},days:{},streak:0,best:0,lastDone:null,freezes:1,xp:0,exam:"",newPerDay:10,notice:"",
+  sound:true,speak:true,auto:true,theme:"auto",fav:{},log:{},lastBackup:null,custom:[]}}
+function load(){try{const r=localStorage.getItem(KEY);S=r?Object.assign(fresh(),JSON.parse(r)):fresh()}catch(e){S=fresh()}
+  /* 古い日の出題データを削除して容量を節約 */
+  for(const k of Object.keys(S.days)){if(diffDays(k,dkey())>40){delete S.days[k]}else if(diffDays(k,dkey())>3){const x=S.days[k];S.days[k]=x.frozen?{frozen:true}:{done:!!x.done}}}
+  applyTheme();rebuild()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function applyTheme(){const r=document.documentElement;if(S.theme==="auto")r.removeAttribute("data-theme");else r.setAttribute("data-theme",S.theme)}
+
+/* ===== 音・発音 ===== */
+let AC=null;
+function beep(ok){if(!S.sound)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume();
+  const t=AC.currentTime,seq=ok?[[784,0],[1175,.09]]:[[196,0],[165,.12]];
+  seq.forEach(([f,dt])=>{const o=AC.createOscillator(),g=AC.createGain();o.type=ok?"sine":"triangle";o.frequency.value=f;
+    g.gain.setValueAtTime(.0001,t+dt);g.gain.exponentialRampToValueAtTime(.12,t+dt+.01);g.gain.exponentialRampToValueAtTime(.0001,t+dt+.18);
+    o.connect(g);g.connect(AC.destination);o.start(t+dt);o.stop(t+dt+.2)})}catch(e){}}
+const canSpeak=()=>"speechSynthesis" in window&&typeof SpeechSynthesisUtterance!=="undefined";
+function say(t,force){if(!canSpeak()||(!force&&!S.speak))return;
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang="en-US";u.rate=.9;speechSynthesis.speak(u)}catch(e){}}
+
+/* ===== 連続記録 ===== */
+let T=dkey();
+function checkStreak(){
+  if(!S.lastDone||S.lastDone===T)return;
+  const gap=diffDays(S.lastDone,T)-1;
+  if(gap<=0)return;
+  if(S.freezes>=gap){
+    S.freezes-=gap;
+    for(let i=1;i<=gap;i++)S.days[addDays(S.lastDone,i)]={frozen:true};
+    S.lastDone=addDays(T,-1);
+    S.notice=`サボった${gap}日分をフリーズで守りました。残りフリーズ ${S.freezes}個。次はありません。`;
+  }else{
+    S.notice=`連続${S.streak}日の記録が途切れました。ゼロから積み直しです。`;
+    S.streak=0;S.lastDone=null;
+  }
+}
+function today(){
+  let d=S.days[T];
+  if(d&&d.queue){d.intro=d.intro||{};d.missed=d.missed||{};return d}
+  const due=Object.entries(S.cards).filter(([id,c])=>WMAP[id]&&c.due<=T).sort((a,b)=>a[1].due<b[1].due?-1:1).map(([id])=>id).slice(0,20);
+  const neu=WORDS.slice().sort((a,b)=>(b[3]||2)-(a[3]||2)).map(w=>w[0]).filter(id=>!S.cards[id]).slice(0,S.newPerDay);
+  let q=[...due,...neu];
+  if(!q.length)q=shuffle(Object.keys(S.cards)).slice(0,10);
+  d=S.days[T]={queue:q,remaining:shuffle(q),firstTry:{},correct:0,answered:0,done:false,isNew:neu,intro:{},missed:{}};
+  save();return d;
+}
+function rankOf(xp){let r=RANKS[0],n=null;for(let i=0;i<RANKS.length;i++){if(xp>=RANKS[i][0]){r=RANKS[i];n=RANKS[i+1]||null}}return{name:r[1],from:r[0],next:n}}
+const weakIds=()=>Object.entries(S.cards).filter(([,c])=>(c.miss||0)>=1&&c.box<=2).sort((a,b)=>(b[1].miss||0)-(a[1].miss||0)).map(([id])=>id);
+function status(id){const c=S.cards[id];if(!c)return"new";if(c.box>=4)return"mas";if((c.miss||0)>=1&&c.box<=2)return"weak";return"learn"}
+
+/* ===== 画面共通 ===== */
+const app=document.getElementById("app");
+let view="home",timer=null,combo=0,cur=null,locked=false,confirmReset=false,sess=null,kindNow="daily",rank0="",adv=null;
+const TABS=[["home","道場",`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6"/></svg>`],
+  ["book","単語帳",`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM4 19V5M8 7h7"/></svg>`],
+  ["set","設定",`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 00-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 00-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 005 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 002 1.2l.4 2.7h4l.4-2.7a7 7 0 002-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>`]];
+function setApp(html,tab){
+  app.className="app"+(tab?" hasTab":"");
+  app.innerHTML=html+(tab?`<nav class="tabbar" aria-label="メニュー"><div class="in">${TABS.map(([k,t,i])=>`<button data-tab="${k}" class="${k===tab?"on":""}" ${k===tab?'aria-current="page"':""}>${i}${t}</button>`).join("")}</div></nav>`:"");
+  window.scrollTo(0,0);
+}
+function nav(t){clearTimeout(adv);if(t==="book")book();else if(t==="set")settings();else home()}
+
+/* ===== ホーム ===== */
+function home(){
+  view="home";clearTimeout(adv);const d=today();
+  const left=d.remaining.length,total=d.queue.length,doneN=total-left;
+  const pct=total?doneN/total:1,C=2*Math.PI*36;
+  const rk=rankOf(S.xp);
+  const learned=Object.keys(S.cards).length,mastered=Object.values(S.cards).filter(c=>c.box>=4).length;
+  const tomorrow=Object.values(S.cards).filter(c=>c.due<=addDays(T,1)).length;
+  const weak=weakIds();
+  let cal="";
+  for(let i=27;i>=0;i--){const k=addDays(T,-i),x=S.days[k],dd=Number(k.slice(8));
+    let cls="",txt=dd;
+    if(x&&x.done){cls="done";txt="済"}else if(x&&x.frozen){cls="frozen";txt="凍"}else if(i===0)cls="today";
+    cal+=`<div class="cell ${cls}" title="${k}">${txt}</div>`}
+  let examHtml="";
+  if(S.exam){const n=diffDays(T,S.exam);
+    examHtml=n>=0?`<section class="panel exam"><div><div class="label">試験まで</div><div class="days">あと${n}日</div></div><div style="font-size:12px;color:var(--muted);text-align:right">1日${S.newPerDay}語なら<br>残り未着手${WORDS.length-learned}語は<b>${Math.ceil((WORDS.length-learned)/S.newPerDay)}日</b>で一巡</div></section>`:""}
+  const nextLine=rk.next?`次の「${rk.next[1]}」まで ${rk.next[0]-S.xp} XP`:"最高位です";
+  const barPct=rk.next?((S.xp-rk.from)/(rk.next[0]-rk.from))*100:100;
+  const hrsLeft=24-new Date().getHours();
+  const HM=homeMood(d,doneN,hrsLeft);const mood=HM.mood,line=HM.line,cls=HM.cls;
+  /* 直近7日 */
+  const w7=[];for(let i=6;i>=0;i--){const k=addDays(T,-i),l=S.log[k]||{n:0,ok:0};w7.push({n:l.n,ok:l.ok,d:Number(k.slice(8)),t:i===0})}
+  const mx=Math.max(10,...w7.map(x=>x.n)),sn=w7.reduce((a,x)=>a+x.n,0),so=w7.reduce((a,x)=>a+x.ok,0);
+  const needBk=learned>=10&&(!S.lastBackup||diffDays(S.lastBackup,T)>=14);
+
+  setApp(`
+  <div class="top">
+    <div class="brand">単語道場<small>EIKEN PRE-1 / 毎日10語</small></div>
+    <div class="rank">段位<b>${rk.name}</b>${S.xp} XP</div>
+  </div>
+  ${S.notice?`<div class="notice">${esc(S.notice)}</div>`:""}
+  ${needBk?`<div class="notice" data-tab="set" style="cursor:pointer">学習記録のバックアップがまだです。端末が変わると消えるため、設定から書き出しておきましょう →</div>`:""}
+  <section class="coach ${cls}">${owl(mood)}<div class="bubble">${line}</div></section>
+  <section class="panel deadline" id="dl">
+    <div class="label" id="dlLabel">今日の締切まで</div>
+    <div class="msg" id="dlMsg"></div>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="streakrow">
+      <div class="chip hot">連続<b>${S.streak}</b>日</div>
+      <div class="chip">最長<b>${S.best}</b>日</div>
+      <div class="chip ice">フリーズ<b>${S.freezes}</b></div>
+    </div>
+    ${!d.done&&S.streak>0?`<div class="risk">今日やらないと、連続${S.streak}日が${S.freezes?"フリーズ1個に変わります":"消えます"}。</div>`:""}
+  </section>
+  <section class="panel quota">
+    <svg class="ring" viewBox="0 0 84 84" aria-hidden="true"><circle class="bgc" cx="42" cy="42" r="36"/>
+      <circle class="fg" cx="42" cy="42" r="36" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct)}" transform="rotate(-90 42 42)"/>
+      <text x="42" y="49" text-anchor="middle">${doneN}/${total}</text></svg>
+    <div class="txt"><div class="label">今日のノルマ</div>
+      <div style="font-weight:700">${d.done?"完了。また明日。":`新出 ${d.isNew.length}語 + 復習 ${total-d.isNew.length}語`}</div>
+      <p>${d.done?`明日の復習予定 ${tomorrow}語`:"新しい語は先に意味と例文を確認できます。間違えた語は正解するまで戻ってきます。"}</p></div>
+  </section>
+  <button class="btn" id="go">${d.done?"おかわり(復習10問)":doneN?"続きから再開":"今日の稽古を始める"}</button>
+  ${weak.length>=3?`<button class="btn sub" id="weak">苦手特訓<small>${Math.min(weak.length,10)}語を集中攻略</small></button>`:""}
+  <section class="panel">
+    <div class="label">出席スタンプ(直近28日)</div>
+    <div class="cal">${cal}</div>
+    <div class="legend"><span class="l1">完了</span><span class="l2">フリーズで保護</span><span class="l3">未実施</span></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">7日連続ごとにフリーズを1個獲得(最大3個)。1日サボると自動で1個消費。</div>
+  </section>
+  <section class="panel">
+    <div class="stats">
+      <div><b>${learned}</b><span>学習済み / ${WORDS.length}</span></div>
+      <div><b>${mastered}</b><span>定着(4回以上)</span></div>
+      <div><b>${weak.length}</b><span>苦手</span></div>
+    </div>
+    <div class="bar"><i style="width:${barPct}%"></i></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">${nextLine}</div>
+  </section>
+  <section class="panel">
+    <div class="label">直近7日の解答数${sn?` / 一発正解率 ${Math.round(so/sn*100)}%`:""}</div>
+    <div class="wk">${w7.map(x=>`<div class="wkc ${x.t?"t":""}"><span>${x.n||""}</span><i style="height:${Math.max(x.n/mx*70,x.n?4:0)}px"></i><em>${x.d}</em></div>`).join("")}</div>
+  </section>
+  ${examHtml}`,"home");
+
+  document.getElementById("go").onclick=()=>{S.notice="";startQuiz(d.done?"extra":"daily")};
+  const wb=document.getElementById("weak");if(wb)wb.onclick=()=>startQuiz("weak");
+  tick();clearInterval(timer);timer=setInterval(tick,1000);
+  typeBubbles();
+}
+function tick(){
+  const el=document.getElementById("clock");if(!el){clearInterval(timer);return}
+  const now=new Date();if(dkey(now)!==T){T=dkey(now);checkStreak();save();home();return}
+  const end=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
+  const s=Math.floor((end-now)/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60),sec=s%60;
+  el.textContent=`${pad(h)}:${pad(m)}:${pad(sec)}`;
+  const d=S.days[T],dl=document.getElementById("dl"),msg=document.getElementById("dlMsg"),lab=document.getElementById("dlLabel");
+  dl.classList.remove("urgent","cleared");
+  if(d&&d.done){dl.classList.add("cleared");lab.textContent="本日分 完了";msg.textContent="今日の判子は押されました。明日の締切まで";return}
+  const started=d&&d.answered>0;
+  if(h<2){dl.classList.add("urgent");msg.textContent="あと2時間を切りました。今すぐ。"}
+  else if(h<6)msg.textContent="締切まで6時間を切りました。";
+  else msg.textContent=started?"途中です。最後までやり切りましょう。":"今日の10語、まだ手つかずです。";
+}
+
+/* ===== 単語帳 ===== */
+let bookF="all",bookQ="";const openW=new Set();
+const BF=[["all","すべて"],["fav","★"],["weak","苦手"],["learn","学習中"],["mas","定着"],["new","未学習"],["cus","追加語"]];
+function book(){
+  view="book";clearInterval(timer);
+  setApp(`<div class="top"><div class="brand">単語帳<small>${WORDS.length}語 / タップで例文</small></div></div>
+  <input type="search" class="search" id="bq" placeholder="英単語・日本語で検索" value="${esc(bookQ)}" aria-label="検索">
+  <div id="addbox"></div><div class="chips" id="bf"></div><div id="blist"></div>`,"book");
+  document.getElementById("bq").oninput=e=>{bookQ=e.target.value;bookList()};
+  addBox();
+  bookList();
+}
+function bookList(){
+  const q=bookQ.trim().toLowerCase();
+  const list=WORDS.filter(w=>{const id=w[0],st=status(id);
+    if(bookF==="fav"&&!S.fav[id])return false;
+    if(bookF==="cus"){if(!WMAP[id].custom)return false}
+    else if(bookF!=="all"&&bookF!=="fav"&&st!==bookF)return false;
+    return !q||id.includes(q)||w[2].includes(q)});
+  document.getElementById("bf").innerHTML=BF.map(([k,t])=>`<button data-f="${k}" class="${k===bookF?"on":""}">${t}</button>`).join("");
+  document.getElementById("blist").innerHTML=list.length?list.map(w=>{const id=w[0],st=status(id),c=S.cards[id],open=openW.has(id);
+    return `<div class="wi ${st}" data-w="${id}"><div class="wi-h"><span class="dot" title="${{new:"未学習",learn:"学習中",mas:"定着",weak:"苦手"}[st]}"></span><b>${id}</b><span class="bdg">${PRI[WMAP[id].pri]}</span><span class="jp">${esc(w[2])}</span><button class="star ${S.fav[id]?"on":""}" data-star="${id}" aria-label="お気に入り">★</button></div>
+    ${open?reveal(WMAP[id])+(c?`<div style="font-size:12px;color:var(--muted);margin-top:6px">出題 ${c.seen||0}回 / 一発ミス ${c.miss||0}回 / 次回 ${c.due}</div>`:"")+(WMAP[id].custom?ctl(id):""):""}</div>`}).join(""):`<div class="empty">該当する単語がありません</div>`;
+}
+function reveal(w){return `<div class="rv"><div class="rv-h"><b>${esc(w.en)}</b><span class="ps">${POS[w.pos]}</span>${spkBtn(w.en)}</div><div class="rv-jp">${esc(w.jp)}</div>${EX[w.en]?`<div class="rv-ex">${hl(w.en,EX[w.en])}</div>`:""}</div>`}
+
+/* ===== 設定 ===== */
+function settings(){
+  view="set";clearInterval(timer);
+  const sw=(k,t,s="")=>`<label class="row"><span>${t}${s?`<small>${s}</small>`:""}</span><input type="checkbox" class="sw" data-k="${k}" ${S[k]?"checked":""}></label>`;
+  setApp(`<div class="top"><div class="brand">設定</div></div>
+  <section class="panel setlist">
+    <label class="row"><span>1日の新出語数<small>変更は明日の稽古から反映されます</small></span><select id="npd">${[5,10,15,20].map(n=>`<option value="${n}" ${S.newPerDay===n?"selected":""}>${n}語</option>`).join("")}</select></label>
+    ${sw("sound","効果音")}
+    ${sw("speak","発音を自動で再生","端末の読み上げ機能を使います")}
+    ${sw("auto","正解したら自動で次へ","オフにするとタップで進みます")}
+    <label class="row"><span>テーマ</span><select id="theme">${[["auto","端末に合わせる"],["light","ライト"],["dark","ダーク"]].map(([k,t])=>`<option value="${k}" ${S.theme===k?"selected":""}>${t}</option>`).join("")}</select></label>
+    <label class="row"><span>試験日</span><input type="date" id="exam" value="${S.exam}"></label>
+  </section>
+  <section class="panel"><div class="label">バックアップ</div>
+    <p>学習記録はこの端末のブラウザ内にだけ保存されています。機種変更やブラウザのデータ削除に備えて、ときどき書き出してください。${S.lastBackup?`(前回 ${S.lastBackup})`:""}</p>
+    <div class="confirm"><button class="btn ghost" id="exp">書き出す</button><button class="btn ghost" id="imp">読み込む</button></div>
+    <input type="file" id="file" accept="application/json,.json" hidden>
+  </section>
+  <div id="resetBox">${confirmReset?`<div class="confirm"><button class="btn ghost" id="rcancel">やめる</button><button class="btn" id="rok">記録をすべて消す</button></div>`:`<button class="btn ghost" id="reset">記録をリセット</button>`}</div>
+  <p class="foot">準1級 単語道場 v2 / 全${WORDS.length}語</p>`,"set");
+  document.getElementById("npd").onchange=e=>{S.newPerDay=+e.target.value;save()};
+  document.getElementById("theme").onchange=e=>{S.theme=e.target.value;applyTheme();save()};
+  document.getElementById("exam").onchange=e=>{S.exam=e.target.value;save()};
+  app.querySelectorAll(".sw").forEach(c=>c.onchange=()=>{S[c.dataset.k]=c.checked;save();if(c.dataset.k==="sound"&&c.checked)beep(true);if(c.dataset.k==="speak"&&c.checked)say("Hello",true)});
+  document.getElementById("exp").onclick=()=>{
+    const b=new Blob([JSON.stringify(S)],{type:"application/json"}),a=document.createElement("a");
+    a.href=URL.createObjectURL(b);a.download=`tango-dojo-backup-${T}.json`;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);S.lastBackup=T;save();settings()};
+  const f=document.getElementById("file");
+  document.getElementById("imp").onclick=()=>f.click();
+  f.onchange=()=>{const file=f.files[0];if(!file)return;const r=new FileReader();
+    r.onload=()=>{try{const o=JSON.parse(r.result);if(!o||typeof o.cards!=="object")throw 0;
+      if(!confirm("いまの記録を上書きして、バックアップの内容に置き換えます。よろしいですか?"))return;
+      S=Object.assign(fresh(),o);S.notice="バックアップを読み込みました。";applyTheme();rebuild();save();home()}
+      catch(e){alert("読み込めませんでした。tango-dojo-backup で始まるJSONファイルを選んでください。")}};
+    r.readAsText(file)};
+  const r=document.getElementById("reset");if(r)r.onclick=()=>{confirmReset=true;settings()};
+  const rc=document.getElementById("rcancel");if(rc)rc.onclick=()=>{confirmReset=false;settings()};
+  const ro=document.getElementById("rok");if(ro)ro.onclick=()=>{S=fresh();confirmReset=false;applyTheme();rebuild();save();home()};
+}
+
+/* ===== クイズ ===== */
+function startQuiz(kind){
+  view="quiz";combo=0;wrongRun=0;clearInterval(timer);kindNow=kind;rank0=rankOf(S.xp).name;
+  if(kind==="daily")sess=today();
+  else{const ids=(kind==="weak"?weakIds():shuffle(Object.keys(S.cards))).slice(0,10);
+    sess={queue:ids,remaining:shuffle(ids),firstTry:{},correct:0,answered:0,intro:{},missed:{}}}
+  sess.intro=sess.intro||{};sess.missed=sess.missed||{};
+  if(!sess.remaining.length){S.notice="出題できる語がまだありません。";return home()}
+  next();
+}
+function pickType(id){
+  const c=S.cards[id],box=c?c.box:0,r=Math.random(),L=canSpeak();
+  if(!c||sess.missed[id])return "en2jp";
+  if(box>=3)return r<.4?"spell":(r<.6&&L?"listen":"jp2en");
+  if(box>=1)return r<.35?"jp2en":(r<.6&&L?"listen":"en2jp");
+  return r<.6?"en2jp":"jp2en";
+}
+function distract(id,sim){
+  let c=WORDS.filter(x=>x[0]!==id&&x[1]===WMAP[id].pos).map(x=>x[0]);
+  if(sim)c.sort((a,b)=>lev(a,id)-lev(b,id)),c=c.slice(0,9);
+  c=shuffle(c).slice(0,3);
+  if(c.length<3)c=c.concat(shuffle(WORDS.map(x=>x[0]).filter(x=>x!==id&&!c.includes(x))).slice(0,3-c.length));
+  return c;
+}
+const qhead=d=>{const total=d.queue.length,done=Math.max(0,total-d.remaining.length);
+  return `<div class="qhead"><button class="x" id="quit">✕ 中断</button><div class="bar"><i style="width:${total?done/total*100:0}%"></i></div><span class="cnt">残り${d.remaining.length}</span></div>`};
+
+function intro(id){
+  const d=sess,w=WMAP[id];view="quiz";locked=true;
+  setApp(`${qhead(d)}
+  <div class="card intro">
+    <span class="tag new">NEW 新出語</span>
+    <div class="pos">${POS[w.pos]}</div>
+    <div class="word">${esc(w.en)}</div>
+    <div>${spkBtn(w.en)}</div>
+    <div class="jpbig">${esc(w.jp)}</div>
+    ${EX[id]?`<div class="rv-ex">${hl(id,EX[id])}</div>`:""}
+  </div>
+  <button class="btn" id="ok">覚えた(あとで確認テスト)</button>
+  <div class="coach sm idle">${owl("normal")}<div class="bubble">${pick(LINES.teach)}</div></div>`);
+  document.getElementById("quit").onclick=()=>home();
+  const ok=document.getElementById("ok");ok.focus({preventScroll:true});
+  ok.onclick=()=>{d.intro[id]=true;d.remaining.shift();d.remaining.splice(Math.min(4,d.remaining.length),0,id);save();next()};
+  typeBubbles();setTimeout(()=>say(w.en),250);
+}
+
+function next(){
+  if(dkey()!==T){T=dkey();checkStreak();save();return home()}
+  const d=sess;clearTimeout(adv);
+  if(!d.remaining.length)return finish();
+  const id=d.remaining[0],w=WMAP[id];
+  if(!S.cards[id]&&!d.intro[id])return intro(id);
+  const type=pickType(id);cur={id,type};locked=false;view="quiz";
+  const isNew=!S.cards[id];
+  const tagTxt=isNew?"NEW":({spell:"スペル",listen:"リスニング"}[type]||"復習");
+  let body,opts="";
+  if(type==="en2jp"){body=`<div class="word">${esc(w.en)}</div><div class="hint">意味は?</div>`;
+    opts=shuffle([id,...distract(id,false)]).map(o=>[o,WMAP[o].jp])}
+  else if(type==="jp2en"){body=`<div class="word jp">${esc(w.jp)}</div><div class="hint">英語は?</div>`;
+    opts=shuffle([id,...distract(id,true)]).map(o=>[o,WMAP[o].en])}
+  else if(type==="listen"){body=`${spkBtn(w.en,"big")}<div class="hint">聞こえた単語は?</div>`;
+    opts=shuffle([id,...distract(id,true)]).map(o=>[o,WMAP[o].en])}
+  else{body=`<div class="word jp">${esc(w.jp)}</div><div class="pattern">${w.en[0]} ${"_ ".repeat(w.en.length-1).trim()}</div><div class="hint">${w.en.length}文字 / 英語を入力</div>`}
+  setApp(`${qhead(d)}
+  <div class="card">
+    <span class="tag ${isNew?"new":""}">${tagTxt}</span>
+    <span class="combo" id="combo">${combo>=2?combo+" COMBO":""}</span>
+    <div class="pos">${POS[w.pos]}</div>
+    ${body}
+  </div>
+  ${type==="spell"
+    ?`<form class="spellbox" id="sf" autocomplete="off"><input id="sp" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="英語で答える" placeholder="スペルを入力"><button class="btn" type="submit">決定</button></form>`
+    :`<div class="opts">${opts.map(([o,t],i)=>`<button class="opt" data-id="${o}"><span class="k">${i+1}</span><span>${esc(t)}</span></button>`).join("")}</div>`}
+  <button class="btn ghost dk" id="dk">わからない</button>
+  <div class="fb" id="fb"></div>
+  <div id="rv"></div>
+  <div class="coach sm idle" id="coach">${owl("think")}<div class="bubble">${askLine(type)}</div></div>
+  <div id="nx"></div>`);
+  app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>answer(b.dataset.id));
+  document.getElementById("quit").onclick=()=>{locked=true;home()};
+  document.getElementById("dk").onclick=()=>settle(false,{dunno:true});
+  if(type==="spell"){const inp=document.getElementById("sp");inp.focus();
+    document.getElementById("sf").onsubmit=e=>{e.preventDefault();const v=inp.value.trim().toLowerCase();if(!v)return;
+      if(v===id)settle(true);else settle(false,{near:lev(v,id)<=1,typed:v})}}
+  if(type==="listen")setTimeout(()=>say(w.en,true),300);startHint(type);
+  typeBubbles();
+}
+function answer(choice){
+  if(locked)return;
+  const id=cur.id,ok=choice===id;
+  app.querySelectorAll(".opt").forEach(b=>{if(b.dataset.id===id)b.classList.add("right");else if(b.dataset.id===choice)b.classList.add("wrong")});
+  settle(ok,{});
+}
+function record(id,ok){
+  const d=sess,c=S.cards[id]||{box:0,due:T,miss:0,seen:0};
+  const L=S.log[T]||(S.log[T]={n:0,ok:0});
+  if(!(id in d.firstTry)){
+    d.firstTry[id]=ok;c.seen=(c.seen||0)+1;if(!ok)c.miss=(c.miss||0)+1;
+    L.n++;if(ok)L.ok++;
+    if(kindNow==="daily"){c.box=ok?Math.min(c.box+1,5):0;c.due=addDays(T,INTERVAL[c.box])}
+    else if(!ok){c.box=0;c.due=addDays(T,1)}
+    S.cards[id]=c;
+  }
+}
+function settle(ok,o){
+  if(locked)return;locked=true;
+  const d=sess,id=cur.id,w=WMAP[id];
+  record(id,ok);d.answered++;
+  let gain=0;
+  if(ok){combo++;gain=10+Math.min(combo,10)*2+(cur.type==="spell"?8:0);S.xp+=gain;d.correct++;d.remaining.shift()}
+  else{combo=0;d.missed[id]=true;d.remaining.shift();d.remaining.splice(Math.min(3,d.remaining.length),0,id)}
+  beep(ok);if(!ok&&navigator.vibrate){try{navigator.vibrate(60)}catch(e){}}
+  const fb=document.getElementById("fb"),co=document.getElementById("coach");
+  co.className="coach sm "+(ok?"hop":"shake");
+  const rc=react(ok,o,w);co.innerHTML=owl(rc.mood)+`<div class="bubble">${rc.text}</div>`;if(rc.mood==="wow")burst(co);
+  typeBubbles();
+  fb.className="fb "+(ok?"ok":"ng");
+  if(ok)fb.textContent=`正解 +${gain} XP`;
+  else fb.textContent=(o.near?"惜しい!あと1文字違います。":o.typed?`「${o.typed}」ではありません。`:o.dunno?"わからない語は、ここで覚えましょう。":"不正解。")+"あとでもう一度出ます。";
+  if(ok&&combo>=2){const cb=document.getElementById("combo");cb.textContent=combo+" COMBO";cb.classList.remove("pop");void cb.offsetWidth;cb.classList.add("pop")}
+  const dk=document.getElementById("dk");if(dk)dk.remove();
+  const sf=document.getElementById("sf");if(sf){sf.querySelector("input").disabled=true;sf.querySelector("button").disabled=true}
+  app.querySelectorAll(".opt").forEach(b=>{b.disabled=true;if(b.dataset.id===id)b.classList.add("right")});
+  document.getElementById("rv").innerHTML=reveal(w);
+  document.getElementById("nx").innerHTML=`<button class="btn" id="nxt">次へ</button>`;
+  const n=document.getElementById("nxt");n.onclick=next;n.focus({preventScroll:true});
+  try{n.scrollIntoView({block:"nearest",behavior:RM?"auto":"smooth"})}catch(e){}
+  if(cur.type!=="listen")say(w.en);
+  save();
+  if(ok&&S.auto)adv=setTimeout(next,2000);
+}
+function finish(){
+  const d=sess,daily=kindNow==="daily";let first=false,bonusFreeze=false;
+  if(daily&&!d.done){
+    d.done=true;first=true;S.xp+=50;
+    if(S.lastDone!==T){S.streak++;S.best=Math.max(S.best,S.streak);S.lastDone=T;
+      if(S.streak%7===0&&S.freezes<3){S.freezes++;bonusFreeze=true}}
+  }
+  save();
+  const firstOk=Object.values(d.firstTry).filter(Boolean).length,n=Object.keys(d.firstTry).length;
+  const missed=Object.keys(d.missed||{}),rk1=rankOf(S.xp).name,up=rk1!==rank0;
+  const title=daily?(first?`連続 ${S.streak}日目`:"本日分は完了済み"):(kindNow==="weak"?"苦手特訓 完了":"おかわり完了");
+  setApp(`
+  <div class="panel result">
+    <div class="hanko">済</div>
+    <div class="big">${title}</div>
+    <div style="color:var(--muted)">${first?"今日の判子を押しました。+50 XP":daily?"":"記録は今日の分に含まれています"}</div>
+    ${finCoach(n?firstOk/n:0,n,up,bonusFreeze,first)}
+    ${up?`<div class="notice">昇段。「${rk1}」になりました。</div>`:""}
+    ${bonusFreeze?`<div class="notice">7日連続達成。フリーズを1個獲得しました。</div>`:""}
+    <div class="stats">
+      <div><b>${n?Math.round(firstOk/n*100):0}%</b><span>一発正解率</span></div>
+      <div><b>${d.answered}</b><span>解答数</span></div>
+      <div><b>${S.xp}</b><span>累計XP</span></div>
+    </div>
+    ${missed.length?`<div class="misslist"><div class="label" style="margin-bottom:4px">つまずいた語(単語帳で復習できます)</div>${missed.map(id=>`<div><b>${esc(id)}</b> ${esc(WMAP[id].jp)}</div>`).join("")}</div>`:""}
+  </div>
+  <button class="btn" id="back">道場に戻る</button>`);
+  document.getElementById("back").onclick=home;if(finWow)burst(document.querySelector(".hanko"));finWow=false;
+  typeBubbles();
+}
+
+/* ===== イベント ===== */
+app.addEventListener("click",e=>{
+  const dl=e.target.closest("[data-del]");
+  if(dl){const id=dl.dataset.del;if(confirm(`「${id}」を削除します。学習記録も消えます。よろしいですか?`)){delWord(id);openW.delete(id);addBox();bookList()}return}
+  if(e.target.closest("[data-nopass]"))return;
+  const ad=e.target.closest("[data-add]");if(ad){addMode=addMode===ad.dataset.add?null:ad.dataset.add;addMsg="";addBox();return}
+  const gv=id=>document.getElementById(id).value;
+  if(e.target.id==="a_ok"){const r=addWords([{en:gv("a_en"),pos:gv("a_pos"),jp:gv("a_jp"),ex:gv("a_ex"),pri:+gv("a_pri")}]);showAddMsg(resMsg(r),!r.ok);return}
+  if(e.target.id==="b_ok"){const r=addWords(parseBulk(gv("b_txt"),+gv("b_pri")));showAddMsg(resMsg(r),!r.ok);return}
+  const t=e.target.closest("[data-tab]");if(t){nav(t.dataset.tab);return}
+  const sp=e.target.closest("[data-say]");if(sp){e.stopPropagation();say(sp.dataset.say,true);return}
+  const st=e.target.closest("[data-star]");if(st){const id=st.dataset.star;if(S.fav[id])delete S.fav[id];else S.fav[id]=1;save();bookList();return}
+  const bf=e.target.closest("[data-f]");if(bf){bookF=bf.dataset.f;bookList();return}
+  const wi=e.target.closest("[data-w]");if(wi){const id=wi.dataset.w;if(openW.has(id))openW.delete(id);else openW.add(id);bookList();return}
+  const bb=e.target.closest(".bubble");if(bb&&bb._typing){finishType(bb);return}
+  const m=e.target.closest(".mascot")||(bb&&bb.parentElement.querySelector(".mascot"));if(!m)return;
+  pokeMascot(m);
+});
+app.addEventListener("change",e=>{const s=e.target.closest("[data-pri]");if(s){setPri(s.dataset.pri,+s.value);bookList()}});
+document.addEventListener("keydown",e=>{
+  if(view!=="quiz")return;
+  const ae=document.activeElement,tag=ae&&ae.tagName;
+  if(/^[1-4]$/.test(e.key)&&!locked&&tag!=="INPUT"){const b=app.querySelectorAll(".opt")[+e.key-1];if(b)b.click()}
+  else if((e.key==="Enter"||e.key===" ")&&locked&&tag!=="BUTTON"){const n=document.getElementById("nxt");if(n){e.preventDefault();n.click()}}
+});
+load();checkStreak();save();home();
+</script>
+
+<script>
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>
