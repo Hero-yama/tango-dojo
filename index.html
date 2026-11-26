@@ -274,6 +274,37 @@ mark{background:var(--stamp-soft);color:var(--stamp);border-radius:4px;padding:0
 .bubble{cursor:pointer;transform-origin:0 100%;animation:bpop .28s cubic-bezier(.3,1.6,.5,1)}
 @keyframes bpop{from{transform:scale(.85);opacity:0}}
 .opt.out{opacity:.35;text-decoration:line-through}
+/* ===== 稽古画面:縦スクロールなしの1画面レイアウト(iPhone SE 375×667 基準) ===== */
+.app.quiz{height:100vh;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));padding-block:8px 10px;gap:8px;overflow-y:auto;overscroll-behavior:none}
+.app.quiz .qhead{flex:none;min-height:28px}
+.app.quiz .coach{flex:none;align-items:center;gap:6px;min-height:50px}
+.app.quiz .coach.sm svg{width:46px;height:46px}
+.app.quiz .bubble{margin-bottom:0;padding:6px 12px;font-size:13px;line-height:1.45}
+.app.quiz .bubble::before{bottom:auto;top:50%;margin-top:-6px}
+.app.quiz .card{flex:1 1 auto;min-height:104px;padding:26px 14px 12px;gap:4px;overflow-y:auto;justify-content:center}
+.app.quiz .card.fit{flex:0 0 auto}
+.app.quiz .card .tag{top:8px;left:12px}
+.app.quiz .card .combo{top:8px}
+.app.quiz .card .word{font-size:clamp(24px,8vw,32px)}
+.app.quiz .card .word.jp{font-size:clamp(18px,6vw,23px);line-height:1.35}
+.app.quiz .opts{flex:none;gap:7px}
+.app.quiz .opt{padding:10px 14px;min-height:46px;line-height:1.35}
+.app.quiz .spellbox{flex:none}
+.app.quiz .spellbox input{padding:10px 12px}
+.app.quiz .act{flex:none;min-height:48px;display:flex}
+.app.quiz .act .btn{padding:13px}
+.app.quiz .act .btn.ghost{padding:11px}
+.app.quiz .intro{padding-top:30px}
+.app.quiz .intro .jpbig{font-size:19px;line-height:1.4}
+.app.quiz .intro .rv-ex{margin-top:2px;font-size:13px}
+.app.quiz .card{justify-content:flex-start}
+.cbody{margin-block:auto;display:flex;flex-direction:column;gap:4px}
+.card .fb{min-height:0;font-size:13px;margin-bottom:2px}
+.ans-w{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.ans-w b{font-family:var(--f-display);font-weight:400;font-size:24px;line-height:1.2;overflow-wrap:anywhere}
+.ans-w .ps{font-size:11px;color:var(--muted);letter-spacing:.08em}
+.ans-jp{font-weight:700;font-size:15px;line-height:1.4}
+.card .ans-ex{font-size:13px;color:var(--muted);line-height:1.5;font-family:Georgia,"Times New Roman",serif;font-style:italic;text-align:left;background:var(--bg);border-radius:8px;padding:6px 10px;margin-top:4px}
 .cf{position:fixed;width:8px;height:12px;z-index:50;pointer-events:none;animation:cf 1.2s cubic-bezier(.2,.7,.3,1) forwards}
 @keyframes cf{to{transform:translate(var(--x),calc(var(--y) + 130px)) rotate(var(--r));opacity:0}}
 
@@ -1001,13 +1032,6 @@ spellask:L(`
 ゆっくり……いっこずつ……
 かけるかな……どきどき……
 `),
-listen:L(`
-みみを……すませて……
-もっち……も……きいてる……
-もういっかい……ききたい……?(スピーカー……おして……)
-なんて……いってた……?
-おとで……おぼえてる……?
-`),
 hint:L(`
 ひとつ……けしといた……
 ちょっと……ヒント……あげる……
@@ -1131,7 +1155,6 @@ function askLine(type){
   if(d.remaining.length===1&&total>=3)return pick(LINES.lastq);
   if(total>=6&&done===Math.floor(total/2))return pick(LINES.half);
   if(kindNow==="weak"&&Math.random()<.5)return pick(LINES.weakask);
-  if(type==="listen")return pick(LINES.listen);
   if(type==="spell")return pick(LINES.spellask);
   return pick(LINES.ask);
 }
@@ -2112,8 +2135,8 @@ let view="home",timer=null,combo=0,cur=null,locked=false,confirmReset=false,sess
 const TABS=[["home","道場",`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6"/></svg>`],
   ["book","単語帳",`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM4 19V5M8 7h7"/></svg>`],
   ["set","設定",`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 00-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 00-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 005 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 002 1.2l.4 2.7h4l.4-2.7a7 7 0 002-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>`]];
-function setApp(html,tab){
-  app.className="app"+(tab?" hasTab":"");
+function setApp(html,tab,cls){
+  app.className="app"+(tab?" hasTab":"")+(cls?" "+cls:"");
   app.innerHTML=html+(tab?`<nav class="tabbar" aria-label="メニュー"><div class="in">${TABS.map(([k,t,i])=>`<button data-tab="${k}" class="${k===tab?"on":""}" ${k===tab?'aria-current="page"':""}>${i}${t}</button>`).join("")}</div></nav>`:"");
   window.scrollTo(0,0);
 }
@@ -2293,10 +2316,10 @@ function startQuiz(kind){
   next();
 }
 function pickType(id){
-  const c=S.cards[id],box=c?c.box:0,r=Math.random(),L=canSpeak();
+  const c=S.cards[id],box=c?c.box:0,r=Math.random();
   if(!c||sess.missed[id])return "en2jp";
-  if(box>=3)return r<.4?"spell":(r<.6&&L?"listen":"jp2en");
-  if(box>=1)return r<.35?"jp2en":(r<.6&&L?"listen":"en2jp");
+  if(box>=3)return r<.45?"spell":"jp2en";
+  if(box>=1)return r<.5?"jp2en":"en2jp";
   return r<.6?"en2jp":"jp2en";
 }
 function distract(id,sim){
@@ -2312,6 +2335,7 @@ const qhead=d=>{const total=d.queue.length,done=Math.max(0,total-d.remaining.len
 function intro(id){
   const d=sess,w=WMAP[id];view="quiz";locked=true;
   setApp(`${qhead(d)}
+  <div class="coach sm idle">${owl("normal")}<div class="bubble">${pick(LINES.teach)}</div></div>
   <div class="card intro">
     <span class="tag new">NEW 新出語</span>
     <div class="pos">${POS[w.pos]}</div>
@@ -2320,8 +2344,7 @@ function intro(id){
     <div class="jpbig">${esc(w.jp)}</div>
     ${EX[id]?`<div class="rv-ex">${hl(id,EX[id])}</div>`:""}
   </div>
-  <button class="btn" id="ok">覚えた(あとで確認テスト)</button>
-  <div class="coach sm idle">${owl("normal")}<div class="bubble">${pick(LINES.teach)}</div></div>`);
+  <div class="act"><button class="btn" id="ok">覚えた(あとで確認テスト)</button></div>`,null,"quiz");
   document.getElementById("quit").onclick=()=>home();
   const ok=document.getElementById("ok");ok.focus({preventScroll:true});
   ok.onclick=()=>{d.intro[id]=true;d.remaining.shift();d.remaining.splice(Math.min(4,d.remaining.length),0,id);save();next()};
@@ -2336,37 +2359,32 @@ function next(){
   if(!S.cards[id]&&!d.intro[id])return intro(id);
   const type=pickType(id);cur={id,type};locked=false;view="quiz";
   const isNew=!S.cards[id];
-  const tagTxt=isNew?"NEW":({spell:"スペル",listen:"リスニング"}[type]||"復習");
+  const tagTxt=isNew?"NEW":({spell:"スペル"}[type]||"復習");
   let body,opts="";
   if(type==="en2jp"){body=`<div class="word">${esc(w.en)}</div><div class="hint">意味は?</div>`;
     opts=shuffle([id,...distract(id,false)]).map(o=>[o,WMAP[o].jp])}
   else if(type==="jp2en"){body=`<div class="word jp">${esc(w.jp)}</div><div class="hint">英語は?</div>`;
     opts=shuffle([id,...distract(id,true)]).map(o=>[o,WMAP[o].en])}
-  else if(type==="listen"){body=`${spkBtn(w.en,"big")}<div class="hint">聞こえた単語は?</div>`;
-    opts=shuffle([id,...distract(id,true)]).map(o=>[o,WMAP[o].en])}
   else{body=`<div class="word jp">${esc(w.jp)}</div><div class="pattern">${w.en[0]} ${"_ ".repeat(w.en.length-1).trim()}</div><div class="hint">${w.en.length}文字 / 英語を入力</div>`}
   setApp(`${qhead(d)}
-  <div class="card">
+  <div class="coach sm idle" id="coach">${owl("think")}<div class="bubble">${askLine(type)}</div></div>
+  <div class="card${type==="spell"?" fit":""}" id="qc">
     <span class="tag ${isNew?"new":""}">${tagTxt}</span>
     <span class="combo" id="combo">${combo>=2?combo+" COMBO":""}</span>
-    <div class="pos">${POS[w.pos]}</div>
-    ${body}
+    <div class="cbody" id="cb"><div class="pos">${POS[w.pos]}</div>
+    ${body}</div>
   </div>
   ${type==="spell"
     ?`<form class="spellbox" id="sf" autocomplete="off"><input id="sp" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="英語で答える" placeholder="スペルを入力"><button class="btn" type="submit">決定</button></form>`
     :`<div class="opts">${opts.map(([o,t],i)=>`<button class="opt" data-id="${o}"><span class="k">${i+1}</span><span>${esc(t)}</span></button>`).join("")}</div>`}
-  <button class="btn ghost dk" id="dk">わからない</button>
-  <div class="fb" id="fb"></div>
-  <div id="rv"></div>
-  <div class="coach sm idle" id="coach">${owl("think")}<div class="bubble">${askLine(type)}</div></div>
-  <div id="nx"></div>`);
+  <div class="act" id="act"><button class="btn ghost dk" id="dk">わからない</button></div>`,null,"quiz");
   app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>answer(b.dataset.id));
   document.getElementById("quit").onclick=()=>{locked=true;home()};
   document.getElementById("dk").onclick=()=>settle(false,{dunno:true});
   if(type==="spell"){const inp=document.getElementById("sp");inp.focus();
     document.getElementById("sf").onsubmit=e=>{e.preventDefault();const v=inp.value.trim().toLowerCase();if(!v)return;
       if(v===id)settle(true);else settle(false,{near:lev(v,id)<=1,typed:v})}}
-  if(type==="listen")setTimeout(()=>say(w.en,true),300);startHint(type);
+  startHint(type);
   typeBubbles();
 }
 function answer(choice){
@@ -2394,22 +2412,23 @@ function settle(ok,o){
   if(ok){combo++;gain=10+Math.min(combo,10)*2+(cur.type==="spell"?8:0);S.xp+=gain;d.correct++;d.remaining.shift()}
   else{combo=0;d.missed[id]=true;d.remaining.shift();d.remaining.splice(Math.min(3,d.remaining.length),0,id)}
   beep(ok);if(!ok&&navigator.vibrate){try{navigator.vibrate(60)}catch(e){}}
-  const fb=document.getElementById("fb"),co=document.getElementById("coach");
+  const co=document.getElementById("coach");
   co.className="coach sm "+(ok?"hop":"shake");
   const rc=react(ok,o,w);co.innerHTML=owl(rc.mood)+`<div class="bubble">${rc.text}</div>`;if(rc.mood==="wow")burst(co);
   typeBubbles();
-  fb.className="fb "+(ok?"ok":"ng");
-  if(ok)fb.textContent=`正解 +${gain} XP`;
-  else fb.textContent=(o.near?"惜しい!あと1文字違います。":o.typed?`「${o.typed}」ではありません。`:o.dunno?"わからない語は、ここで覚えましょう。":"不正解。")+"あとでもう一度出ます。";
+  const fbt=ok?`正解 +${gain} XP`:(o.near?"惜しい!あと1文字違います。":o.typed?`「${o.typed}」ではありません。`:o.dunno?"ここで覚えましょう。":"不正解。")+"あとでもう一度出ます。";
+  // 問題カードを答え表示に置き換える(スクロールせずに答えと例文が見える)
+  const qc=document.getElementById("qc");qc.classList.remove("fit");
+  document.getElementById("cb").innerHTML=`<div class="fb ${ok?"ok":"ng"}">${esc(fbt)}</div>
+    <div class="ans-w"><b>${esc(w.en)}</b><span class="ps">${POS[w.pos]}</span>${spkBtn(w.en)}</div>
+    <div class="ans-jp">${esc(w.jp)}</div>${EX[w.en]?`<div class="ans-ex">${hl(w.en,EX[w.en])}</div>`:""}`;
   if(ok&&combo>=2){const cb=document.getElementById("combo");cb.textContent=combo+" COMBO";cb.classList.remove("pop");void cb.offsetWidth;cb.classList.add("pop")}
-  const dk=document.getElementById("dk");if(dk)dk.remove();
-  const sf=document.getElementById("sf");if(sf){sf.querySelector("input").disabled=true;sf.querySelector("button").disabled=true}
+  const sf=document.getElementById("sf");if(sf){const ip=sf.querySelector("input");ip.blur();ip.disabled=true;sf.querySelector("button").disabled=true}
   app.querySelectorAll(".opt").forEach(b=>{b.disabled=true;if(b.dataset.id===id)b.classList.add("right")});
-  document.getElementById("rv").innerHTML=reveal(w);
-  document.getElementById("nx").innerHTML=`<button class="btn" id="nxt">次へ</button>`;
+  document.getElementById("act").innerHTML=`<button class="btn" id="nxt">次へ</button>`;
   const n=document.getElementById("nxt");n.onclick=next;n.focus({preventScroll:true});
-  try{n.scrollIntoView({block:"nearest",behavior:RM?"auto":"smooth"})}catch(e){}
-  if(cur.type!=="listen")say(w.en);
+  if(sf)window.scrollTo(0,0);
+  say(w.en);
   save();
   if(ok&&S.auto)adv=setTimeout(next,2000);
 }

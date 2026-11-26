@@ -1,5 +1,5 @@
 // アプリを更新したら、この番号を上げてください(v1 → v2)
-const CACHE = "tango-dojo-v6";
+const CACHE = "tango-dojo-v7";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
